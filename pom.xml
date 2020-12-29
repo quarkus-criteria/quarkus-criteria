@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
     <groupId>com.github.adminfaces</groupId>
     <artifactId>quarkus-criteria-parent</artifactId>
@@ -27,8 +28,8 @@
         <connection>scm:git:https://github.com/adminfaces/quarkus-criteria.git</connection>
         <developerConnection>scm:git:git@github.com:adminfaces/quarkus-criteria.git</developerConnection>
         <url>https://github.com/adminfaces/quarkus-criteria.git</url>
-      <tag>HEAD</tag>
-  </scm>
+        <tag>HEAD</tag>
+    </scm>
 
     <properties>
         <quarkus.version>1.10.5.Final</quarkus.version>
@@ -42,6 +43,7 @@
         <module>deployment</module>
         <module>runtime</module>
         <module>system-tests</module>
+        <module>coverage∂-report</module>
     </modules>
 
     <dependencyManagement>
@@ -97,83 +99,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-        <profile>
-            <id>coverage</id>
-            <properties>
-                <jacoco.version>0.8.6</jacoco.version>
-            </properties>
-            <build>
-                <plugins>
-                    <plugin>
-                        <groupId>org.jacoco</groupId>
-                        <artifactId>jacoco-maven-plugin</artifactId>
-                        <version>${jacoco.version}</version>
-                        <configuration>
-                            <!-- basically excludes classes from example project-->
-                            <excludes>
-                                <exclude>**/*CarService.*</exclude>
-                                <exclude>**/*Car.*</exclude>
-                                <exclude>**/*CarCriteria.*</exclude>
-                                <exclude>**/*Car*</exclude>
-                                <exclude>**/*Brand*</exclude>
-                                <exclude>**/*SalesPoint*</exclude>
-                                <exclude>**/*App*</exclude>
-                                <exclude>**/*CarWithNameAndPrice*</exclude>
-                                <exclude>**/*AdminDataModel*</exclude>
-                                <exclude>**/*SessionFilter*</exclude>
-                                <exclude>**/*EntityConverter*</exclude>
-                            </excludes>
-                        </configuration>
-
-                        <executions>
-                            <execution>
-                                <goals>
-                                    <goal>prepare-agent</goal>
-                                </goals>
-                            </execution>
-                            <execution>
-                                <id>report</id>
-                                <phase>prepare-package</phase>
-                                <goals>
-                                    <goal>report</goal>
-                                </goals>
-                            </execution>
-                        </executions>
-                    </plugin>
-                    <plugin>
-                        <groupId>org.eluder.coveralls</groupId>
-                        <artifactId>coveralls-maven-plugin</artifactId>
-                        <version>4.1.0</version>
-                        <configuration>
-                            <repoToken>${COVERALLS}</repoToken>
-                        </configuration>
-                    </plugin>
-                    <plugin>
-                        <artifactId>maven-surefire-plugin</artifactId>
-                        <version>2.19.1</version>
-                        <configuration>
-                            <includes>
-                                <include>**/*It.java</include>
-                                <include>**/*Test.java</include>
-                            </includes>
-                            <systemPropertyVariables>
-                                <java.util.logging.config.file>
-                                    src/test/resources/logging.properties
-                                </java.util.logging.config.file>
-                            </systemPropertyVariables>
-                        </configuration>
-                    </plugin>
-                </plugins>
-            </build>
-            <dependencies>
-                <dependency>
-                    <groupId>org.jacoco</groupId>
-                    <artifactId>org.jacoco.core</artifactId>
-                    <version>${jacoco.version}</version>
-                    <scope>test</scope>
-                </dependency>
-            </dependencies>
         </profile>
     </profiles>
 </project>
