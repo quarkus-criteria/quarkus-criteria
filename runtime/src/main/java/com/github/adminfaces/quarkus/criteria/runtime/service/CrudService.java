@@ -69,16 +69,16 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
 
     protected void configSort(Filter<T> filter, Criteria<T, T> criteria) {
         if (!filter.getMultiSort().isEmpty()) { //multi sort
-            for (MultiSort adminMultiSort : filter.getMultiSort()) {
-                addSort(criteria, adminMultiSort.getAdminSort(), adminMultiSort.getSortField());
+            for (MultiSort multiSort : filter.getMultiSort()) {
+                addSort(criteria, multiSort.getSort(), multiSort.getSortField());
             }
         } else { //single field sort 
-            addSort(criteria, filter.getAdminSort(), filter.getSortField());
+            addSort(criteria, filter.getSort(), filter.getSortField());
         }
     }
 
     /**
-     * Called before pagination, should be overriden. By default there is no restrictions.
+     * Called before pagination, should be overridden. By default there is no restrictions.
      *
      * @param filter used to create restrictions
      * @return a criteria with configured restrictions
@@ -418,9 +418,40 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
         return criteria;
     }
 
-
     public void setEntityManager(EntityManager entityManager) {
         this.entityManager = entityManager;
+    }
+
+    /**
+     * Creates an array of Ids (pks) from a list of entities.
+     * It is useful when working with `in clauses` on DeltaSpike criteria
+     * because the API only support primitive arrays.
+     *
+     * @param entities list of entities to create
+     * @param idsType  the type of the pk list, e.g new Long[0]
+     * @return primitive array containing entities pks.
+     */
+    @SuppressWarnings("unchecked")
+    protected <ID extends Serializable> ID[] toListOfIds(Collection<? extends PersistenceEntity> entities, ID[] idsType) {
+        Set<ID> ids = new HashSet<>();
+        for (PersistenceEntity entity : entities) {
+            ids.add((ID) entity.getId());
+        }
+        return (ID[]) ids.toArray(idsType);
+    }
+
+    protected void addSort(Criteria<T, T> criteria, Sort admin, String sortField) {
+        if (sortField != null) {
+            SingularAttribute sortAttribute = getEntityManager().getMetamodel().entity(entityClass).getSingularAttribute(sortField);
+            if (admin.equals(Sort.UNSORTED)) {
+                admin = Sort.ASCENDING;
+            }
+            if (admin.equals(Sort.ASCENDING)) {
+                criteria.orderAsc(sortAttribute);
+            } else {
+                criteria.orderDesc(sortAttribute);
+            }
+        }
     }
 
     public void beforeAll(T entity) {
@@ -445,37 +476,5 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
     }
 
     public void afterAll(T entity) {
-    }
-
-    /**
-     * Creates an array of Ids (pks) from a list of entities.
-     * It is useful when working with `in clauses` on DeltaSpike criteria
-     * because the API only support primitive arrays.
-     *
-     * @param entities list of entities to create
-     * @param idsType  the type of the pk list, e.g new Long[0]
-     * @return primitive array containing entities pks.
-     */
-    @SuppressWarnings("unchecked")
-    protected <ID extends Serializable> ID[] toListOfIds(Collection<? extends PersistenceEntity> entities, ID[] idsType) {
-        Set<ID> ids = new HashSet<>();
-        for (PersistenceEntity entity : entities) {
-            ids.add((ID) entity.getId());
-        }
-        return (ID[]) ids.toArray(idsType);
-    }
-
-    protected void addSort(Criteria<T, T> criteria, Sort adminSort, String sortField) {
-        if (sortField != null) {
-            SingularAttribute sortAttribute = getEntityManager().getMetamodel().entity(entityClass).getSingularAttribute(sortField);
-            if (adminSort.equals(Sort.UNSORTED)) {
-                adminSort = Sort.ASCENDING;
-            }
-            if (adminSort.equals(Sort.ASCENDING)) {
-                criteria.orderAsc(sortAttribute);
-            } else {
-                criteria.orderDesc(sortAttribute);
-            }
-        }
     }
 }

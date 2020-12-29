@@ -239,7 +239,7 @@ public class CrudServiceIt {
     @DataSet("cars.yml")
     public void shouldPaginateCars() {
         Filter<Car> carFilter = new Filter<Car>().setFirst(0).setPageSize(1)
-                .setAdminSort(Sort.ASCENDING)
+                .setSort(Sort.ASCENDING)
                 .setSortField(Car_.id.getName());
         List<Car> cars = carService.paginate(carFilter);
         assertNotNull(cars);
@@ -263,7 +263,7 @@ public class CrudServiceIt {
                 .setFirst(0)
                 .setPageSize(4)
                 .setSortField("model")
-                .setAdminSort(Sort.DESCENDING);
+                .setSort(Sort.DESCENDING);
         List<Car> cars = carService.paginate(carFilter);
         AssertionsForInterfaceTypes.assertThat(cars).isNotNull().hasSize(4);
         assertTrue(cars.get(0).getModel().equals("Porche274"));

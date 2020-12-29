@@ -35,7 +35,8 @@ Enables type safe and fluent criteria API for Quarkus applications via https://d
 
 * Create a JPA entity which implements `PersistenceEntity` or extend `BaseEntity`
 +
-```
+[source,java]
+----
 @Entity
 @Table(name = "car")
 public class Car extends BaseEntity {
@@ -66,10 +67,11 @@ public class Car extends BaseEntity {
     public Integer getId() {
         return id;
     }
-```
+----
+
 * To have `type safe` queries you need to enable JPA metamodel generation on your build:
 
-```
+----
 <plugin>
     <groupId>org.bsc.maven</groupId>
     <artifactId>maven-processor-plugin</artifactId>
@@ -96,7 +98,7 @@ public class Car extends BaseEntity {
         </dependency>
     </dependencies>
 </plugin>
-```
+----
 +
 TIP: See https://docs.jboss.org/hibernate/orm/5.0/topical/html/metamodelgen/MetamodelGenerator.html#_usage_within_the_ide[this tutorial^] for configuring it on your IDE.
 
@@ -129,11 +131,20 @@ The easiest way to use quarkus criteria to query an entity is via *generic injec
     Car carExample = new Car().model("Ferrari");
     List<Car> cars = carService.example(carExample, Car_.model).getResultList()
     // aggregation function
-    criteria()
-           .select(Double.class, sum(Car_.price))
-           .eqIgnoreCase(Car_.model, model)
-           .getSingleResult();
+   Double result = criteria()
+        .select(Double.class, sum(Car_.price))
+        .likeIgnoreCase(Car_.model, model)
+        .getSingleResult();
 
+    // delete in batches
+     int deleted = crudService.removeBatch(crudService.criteria().getResultList(), 5);
+     assertThat(deleted).isEqualTo(10);
+     assertThat(crudService.count()).isEqualTo(0L);
+    // count by criteria
+    long count = crudService.count(crudService.criteria()
+                .likeIgnoreCase(Car_.model, "%porche%")
+                .gtOrEq(Car_.price, 10000D));
+    assertEquals(1, count);
 ----
 
 You can also inherit from CrudService, this way you can invoke `where`, `criteria()` and other methods directly from superclass instead of calling them via crudService instance:
@@ -141,7 +152,6 @@ You can also inherit from CrudService, this way you can invoke `where`, `criteri
 [source, java]
 ----
 @Transactional(Transactional.TxType.SUPPORTS)
-@Dependent
 public class CarService extends CrudService<Car> implements Serializable {
 
  public List<CarWithNameAndPrice> getCarsAndMapToDTO() {
@@ -158,7 +168,7 @@ public class CarService extends CrudService<Car> implements Serializable {
 }
 ----
 
-TIP: More examples in integration tests or in sample app.
+TIP: More examples in https://github.com/adminfaces/quarkus-criteria/blob/master/system-tests/src/test/java/com/github/adminfaces/quarkus/criteria/CrudServiceIt.java#L31[integration tests^] or in https://github.com/adminfaces/quarkus-criteria/blob/master/system-tests/src/main/java/com/github/adminfaces/quarkus/criteria/QuarkusCriteriaApp.java#L37[sample app^].
 
 
 === Run sample application

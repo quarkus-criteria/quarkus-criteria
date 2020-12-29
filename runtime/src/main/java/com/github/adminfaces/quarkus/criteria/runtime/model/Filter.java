@@ -17,7 +17,7 @@ public class Filter<T extends PersistenceEntity> implements Serializable {
     private int first;
     private int pageSize;
     private String sortField;
-    private Sort adminSort;
+    private Sort sort;
     private List<MultiSort> multiSort = new ArrayList<>();
     private Map<String, Object> params = new HashMap<>();
 
@@ -55,13 +55,13 @@ public class Filter<T extends PersistenceEntity> implements Serializable {
         return sortField;
     }
 
-    public Filter setAdminSort(Sort adminSort) {
-        this.adminSort = adminSort;
+    public Filter setSort(Sort sort) {
+        this.sort = sort;
         return this;
     }
 
-    public Sort getAdminSort() {
-        return adminSort;
+    public Sort getSort() {
+        return sort;
     }
 
     public Filter setParams(Map<String, Object> params) {
@@ -78,9 +78,9 @@ public class Filter<T extends PersistenceEntity> implements Serializable {
         return this;
     }
 
-    public Filter addMultSort(Sort adminSort, String sortField) {
-        if (!multiSort.contains(adminSort)) {
-            multiSort.add(new MultiSort(adminSort, sortField));
+    public Filter addMultSort(Sort sort, String sortField) {
+        if (!multiSort.contains(sort)) {
+            multiSort.add(new MultiSort(sort, sortField));
         }
         return this;
     }

@@ -8,16 +8,16 @@ import java.util.Objects;
  */
 public class MultiSort {
     
-    private final Sort adminSort;
+    private final Sort sort;
     private final String sortField;
 
-    public MultiSort(Sort adminSort, String sortField) {
-        this.adminSort = adminSort;
+    public MultiSort(Sort sort, String sortField) {
+        this.sort = sort;
         this.sortField = sortField;
     }
 
-    public Sort getAdminSort() {
-        return adminSort;
+    public Sort getSort() {
+        return sort;
     }
 
     public String getSortField() {
@@ -45,7 +45,7 @@ public class MultiSort {
         if (!Objects.equals(this.sortField, other.sortField)) {
             return false;
         }
-        if (this.adminSort != other.adminSort) {
+        if (this.sort != other.sort) {
             return false;
         }
         return true;

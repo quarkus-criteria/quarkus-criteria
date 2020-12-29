@@ -31,8 +31,8 @@
   </scm>
 
     <properties>
-        <quarkus.version>1.7.6.Final</quarkus.version>
-        <deltaspike.version>1.8.2</deltaspike.version>
+        <quarkus.version>1.10.5.Final</quarkus.version>
+        <deltaspike.version>1.9.4</deltaspike.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
