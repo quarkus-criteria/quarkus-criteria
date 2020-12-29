@@ -21,7 +21,7 @@ Enables type safe and fluent criteria API for Quarkus applications via https://d
 == Usage
 
 * Add the following dependency:
-
++
 [source, xml]
 ----
 <dependency>
@@ -68,7 +68,7 @@ public class Car extends BaseEntity {
 ----
 
 * To have `type safe` queries you need to enable JPA metamodel generation on your build:
-
++
 ----
 <plugin>
     <groupId>org.bsc.maven</groupId>
@@ -117,7 +117,7 @@ The easiest way to use quarkus criteria to query an entity is via *generic injec
     crudService.criteria().getResultList()
     // a type safe criteria example
     crudService.criteria()
-       .fetch(Car_.salesPoints, JoinType.LEFT)
+       .fetch(Car_.salesPoints, JoinType.LEFT)// fetches salesPoint list in result
                   .join(Car_.brand, crudService.where(Brand.class)
                             .or(crudService.criteria(Brand.class).eq(Brand_.name, "Nissan"),
                                     crudService.criteria(Brand.class).eq(Brand_.name, "Tesla")))
