@@ -1,11 +1,10 @@
 package com.github.adminfaces.quarkus.criteria.criteria;
 
-import com.github.adminfaces.quarkus.criteria.model.*;
+import com.github.adminfaces.quarkus.criteria.model.Car;
+import com.github.adminfaces.quarkus.criteria.model.Car_;
 import com.github.adminfaces.quarkus.criteria.runtime.criteria.BaseCriteriaSupport;
 
 import javax.enterprise.context.ApplicationScoped;
-import javax.persistence.criteria.JoinType;
-import java.util.List;
 
 @ApplicationScoped
 public class CarCriteria extends BaseCriteriaSupport<Car> {
@@ -16,7 +15,7 @@ public class CarCriteria extends BaseCriteriaSupport<Car> {
     public Double getTotalPriceByModel(String model) {
         return criteria()
                   .select(Double.class, sum(Car_.price))
-                .eqIgnoreCase(Car_.model, model)
+                .likeIgnoreCase(Car_.model, model)
                 .getSingleResult();
     }
 }
