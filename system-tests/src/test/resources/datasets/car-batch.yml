@@ -1,0 +1,57 @@
+car:
+  - id: -1
+    model: "car"
+    name: "car"
+    price: 1
+    version: 0
+  - id: -2
+    model: "car"
+    name: "car"
+    price: 1
+    version: 0
+  - id: -3
+    model: "car"
+    name: "car"
+    price: 1
+    version: 0
+  - id: -4
+    model: "car"
+    name: "car"
+    price: 1
+    version: 0
+  - id: -5
+    model: "car"
+    name: "car"
+    price: 1
+    version: 0
+  - id: -6
+    model: "car"
+    name: "car"
+    price: 1
+    version: 0
+  - id: -7
+    model: "car"
+    name: "car"
+    price: 1
+    version: 0
+  - id: -8
+    model: "car"
+    name: "car"
+    price: 1
+    version: 0
+  - id: -9
+    model: "car"
+    name: "car"
+    price: 1
+    version: 0
+  - id: -10
+    model: "car"
+    name: "car"
+    price: 1
+    version: 0
+
+brand:
+
+sales_point:
+
+car_sales_point:

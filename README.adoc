@@ -1,0 +1,181 @@
+= Quarkus Criteria Extension
+:page-layout: base
+:source-language: java
+:icons: font
+:linkattrs:
+:sectanchors:
+:sectlink:
+:numbered:
+:doctype: book
+:toc: preamble
+:tip-caption: :bulb:
+:note-caption: :information_source:
+:important-caption: :heavy_exclamation_mark:
+:caution-caption: :fire:
+:warning-caption: :warning:
+
+image:https://travis-ci.org/adminfaces/quarkus-criteria.svg[Build Status (Travis CI), link=https://travis-ci.org/adminfaces/quarkus-criteria]
+
+Enables type safe and fluent criteria API for Quarkus applications via https://deltaspike.apache.org/documentation/data.html#JPACriteriaAPISupport[DeltaSpike Criteria^].
+
+ 
+== Usage
+
+* Add the following dependency:
+
+[source, xml]
+----
+<dependency>
+    <groupId>com.github.adminfaces</groupId>
+    <artifactId>quarkus-criteria</artifactId>
+    <version>1.0.0</version>
+</dependency>
+----
+
+* Create a JPA entity which implements `PersistenceEntity` or extend `BaseEntity`
++
+```
+@Entity
+@Table(name = "car")
+public class Car extends BaseEntity {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.AUTO)
+    private Integer id;
+
+    @Column(name = "model")
+    private String model;
+
+    @Column(name = "name")
+    private String name;
+
+    @Column(name = "price")
+    private Double price;
+
+    @OneToOne
+    private Brand brand;
+
+    @ManyToMany
+    private List<SalesPoint> salesPoints;
+
+    @Version
+    private Integer version;
+
+    @Override
+    public Integer getId() {
+        return id;
+    }
+```
+* To have `type safe` queries you need to enable JPA metamodel generation on your build:
+
+```
+<plugin>
+    <groupId>org.bsc.maven</groupId>
+    <artifactId>maven-processor-plugin</artifactId>
+    <version>3.3.2</version>
+    <executions>
+        <execution>
+            <id>process</id>
+            <phase>generate-sources</phase>
+            <goals>
+                <goal>process</goal>
+            </goals>
+            <configuration>
+                <processors>
+                    <processor>org.hibernate.jpamodelgen.JPAMetaModelEntityProcessor</processor>
+                </processors>
+            </configuration>
+        </execution>
+    </executions>
+    <dependencies>
+        <dependency>
+            <groupId>org.hibernate</groupId>
+            <artifactId>hibernate-jpamodelgen</artifactId>
+            <version>5.2.12.Final</version>
+        </dependency>
+    </dependencies>
+</plugin>
+```
++
+TIP: See https://docs.jboss.org/hibernate/orm/5.0/topical/html/metamodelgen/MetamodelGenerator.html#_usage_within_the_ide[this tutorial^] for configuring it on your IDE.
+
+* Now you're ready to use https://deltaspike.apache.org/documentation/data.html#JPACriteriaAPISupport[DeltaSpike type safe fluent criteria API] on your Quarkus application
+
+
+=== Examples
+
+The easiest way to use quarkus criteria to query an entity is via *generic injection* of `CrudService`:
+
+[source, java]
+----
+    @Inject
+    @Service
+    CrudService<Car> crudService;
+
+    //list all cars
+    crudService.criteria().getResultList()
+    // a type safe criteria example
+    crudService.criteria()
+       .fetch(Car_.salesPoints, JoinType.LEFT)
+                  .join(Car_.brand, crudService.where(Brand.class)
+                            .or(crudService.criteria(Brand.class).eq(Brand_.name, "Nissan"),
+                                    crudService.criteria(Brand.class).eq(Brand_.name, "Tesla")))
+                    .join(Car_.salesPoints, where(SalesPoint.class)
+                            .likeIgnoreCase(SalesPoint_.name, "%Tesla%"))
+                    .or(crudService.criteria().likeIgnoreCase(Car_.model, "%1%"),
+                            crudService.criteria().like(Car_.name, "%2%"));
+    // list by example
+    Car carExample = new Car().model("Ferrari");
+    List<Car> cars = carService.example(carExample, Car_.model).getResultList()
+    // aggregation function
+    criteria()
+           .select(Double.class, sum(Car_.price))
+           .eqIgnoreCase(Car_.model, model)
+           .getSingleResult();
+
+----
+
+You can also inherit from CrudService, this way you can invoke `where`, `criteria()` and other methods directly from superclass instead of calling them via crudService instance:
+
+[source, java]
+----
+@Transactional(Transactional.TxType.SUPPORTS)
+@Dependent
+public class CarService extends CrudService<Car> implements Serializable {
+
+ public List<CarWithNameAndPrice> getCarsAndMapToDTO() {
+        List<CarWithNameAndPrice> carsDTO = criteria()
+                .select(CarWithNameAndPrice.class, attribute(Car_.name), attribute(Car_.price))
+                .join(Car_.brand, where(Brand.class)
+                        .or(criteria(Brand.class)
+                                        .eq(Brand_.name, "Nissan"),
+                                criteria(Brand.class).eq(Brand_.name, "Tesla")))
+                .join(Car_.salesPoints, where(SalesPoint.class)
+                        .likeIgnoreCase(SalesPoint_.name, "%Tesla%")).getResultList();
+        return carsDTO;
+
+}
+----
+
+TIP: More examples in integration tests or in sample app.
+
+
+=== Run sample application
+
+* `cd system-tests && mvn compile quarkus:dev`
+
+TIP: Run via quarkus runner with `mvn clean package && java -jar target/quarkus-criteria-st-runner.jar`
+
+=== Native mode
+
+To run o quarkus native use:
+
+`mvn clean package -Pnative && ./target/quarkus-criteria-st-runner`
+
+=== Run System tests
+
+`mvn clean test`
+
+=== Run native tests
+
+`mvn verify -Pnative`
