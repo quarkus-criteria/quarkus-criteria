@@ -6,3 +6,6 @@ cache:
   - "$HOME/.m2/repository"
 script:
 - mvn package -Pcoverage jacoco:report coveralls:report
+env:
+  global:
+    secure: Qitv6vRccXnedDo8gi18RvEtZfwDtc4ft043Q4JEg+T50XTY2fdNhplbzQmImYLZegfRkErnW61X4Yj8ePU93Pwii35roLdEJU+6GbxDO0G7hxYuWJOLYOuA0yJmwUErF5EKXtfb71L1jzk/tcIisFBkPD5cUM/W2fp5fAd00jlJPE/2+HUDlhAl5xNcqIo+L6u1Kym076ga6+aouVGwOPSfkeu5MoIDKs4TcI1WfCHp+PJdOHifWwO0PxM15tC+oForQdYCLPPGIZMyBJ6O4c19ArHFnDV7ctFFOMI15HSdeK+bUo/sCU3311z+9AvEB22befiK+IeKPQJOA8pUc3zg+UHwijfSUHhfvwMIDWD5Ya8GWV+VeoEmv0UEtbxn5ABxVmEry6jFs0N8axe90q617AJH0tFm6ojgztwTRmizzt+mIZir3YpkjvaZaSAXHjVwiwjTlCDc/iN/tEVgJRqr9wzYon4K8Dm7PedREnz96ZnOquycrMQ+Gd2CDfxMV0BufmQQSFXAmKyeIeXP1ziUi1bW77cTrAoUfEgj4mXUNq+xXmxd2ZqXVieHAp9WrWoSJ8BECJPJ/CYZw+E1tVNjVlLvDzOLzqBwXW3imBEXl++I7mgds/KSBwiW1qUQnAp+na7aqSvlwP9lJq8cYkL4VL09MI6IFRYWcBD/PKY=
