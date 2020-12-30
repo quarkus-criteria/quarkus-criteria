@@ -134,6 +134,12 @@ The easiest way to use quarkus criteria to query an entity is via *generic injec
         .likeIgnoreCase(Car_.model, model)
         .getSingleResult();
 
+   // insert
+   List.of(new Brand().setName("Nissan"),
+            new Brand().setName("Ford"),
+            new Brand().setName("Tesla"))
+              .forEach(brandCrud::insert);
+
     // delete in batches
      int deleted = crudService.removeBatch(crudService.criteria().getResultList(), 5);
      assertThat(deleted).isEqualTo(10);

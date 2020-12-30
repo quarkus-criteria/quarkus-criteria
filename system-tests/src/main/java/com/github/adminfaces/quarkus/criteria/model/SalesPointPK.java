@@ -2,6 +2,7 @@ package com.github.adminfaces.quarkus.criteria.model;
 
 import javax.persistence.Embeddable;
 import java.io.Serializable;
+import java.util.Objects;
 
 @Embeddable
 public class SalesPointPK implements Serializable{
@@ -32,6 +33,20 @@ public class SalesPointPK implements Serializable{
 
     public void setId2(Long id2) {
         this.id2 = id2;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SalesPointPK that = (SalesPointPK) o;
+        return Objects.equals(id1, that.id1) &&
+                Objects.equals(id2, that.id2);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(id1, id2);
     }
 
     @Override
