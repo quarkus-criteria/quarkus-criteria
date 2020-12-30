@@ -43,7 +43,6 @@
         <module>deployment</module>
         <module>runtime</module>
         <module>system-tests</module>
-        <module>coverage∂-report</module>
     </modules>
 
     <dependencyManagement>
