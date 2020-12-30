@@ -5,7 +5,6 @@
 :linkattrs:
 :sectanchors:
 :sectlink:
-:numbered:
 :doctype: book
 :toc: preamble
 :tip-caption: :bulb:
@@ -22,7 +21,7 @@ Enables type safe and fluent criteria API for Quarkus applications via https://d
 == Usage
 
 * Add the following dependency:
-
++
 [source, xml]
 ----
 <dependency>
@@ -69,7 +68,7 @@ public class Car extends BaseEntity {
 ----
 
 * To have `type safe` queries you need to enable JPA metamodel generation on your build:
-
++
 ----
 <plugin>
     <groupId>org.bsc.maven</groupId>
@@ -118,7 +117,7 @@ The easiest way to use quarkus criteria to query an entity is via *generic injec
     crudService.criteria().getResultList()
     // a type safe criteria example
     crudService.criteria()
-       .fetch(Car_.salesPoints, JoinType.LEFT)
+       .fetch(Car_.salesPoints, JoinType.LEFT)// fetches salesPoint list in result
                   .join(Car_.brand, crudService.where(Brand.class)
                             .or(crudService.criteria(Brand.class).eq(Brand_.name, "Nissan"),
                                     crudService.criteria(Brand.class).eq(Brand_.name, "Tesla")))
@@ -170,7 +169,7 @@ public class CarService extends CrudService<Car> implements Serializable {
 TIP: More examples in https://github.com/adminfaces/quarkus-criteria/blob/master/system-tests/src/test/java/com/github/adminfaces/quarkus/criteria/CrudServiceIt.java#L31[integration tests^] or in https://github.com/adminfaces/quarkus-criteria/blob/master/system-tests/src/main/java/com/github/adminfaces/quarkus/criteria/QuarkusCriteriaApp.java#L37[sample app^].
 
 
-=== Run sample application
+== Run sample application
 
 * `cd system-tests && mvn compile quarkus:dev`
 
@@ -182,10 +181,10 @@ To run o quarkus native use:
 
 `mvn clean package -Pnative && ./target/quarkus-criteria-st-runner`
 
-=== Run System tests
+== Run System tests
 
 `mvn clean test`
 
-=== Run native tests
+== Run native tests
 
 `mvn verify -Pnative`
