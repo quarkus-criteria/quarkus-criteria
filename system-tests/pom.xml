@@ -2,7 +2,7 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <groupId>com.github.adminfaces</groupId>
+        <groupId>com.github.quarkus.criteria</groupId>
         <artifactId>quarkus-criteria-parent</artifactId>
         <version>1.0.0-SNAPSHOT</version>
         <relativePath>../</relativePath>
@@ -25,7 +25,7 @@
             <artifactId>quarkus-core-deployment</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.github.adminfaces</groupId>
+            <groupId>com.github.quarkus.criteria</groupId>
             <artifactId>quarkus-criteria</artifactId>
             <version>${project.version}</version>
         </dependency>

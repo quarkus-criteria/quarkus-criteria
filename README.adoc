@@ -13,7 +13,7 @@
 :caution-caption: :fire:
 :warning-caption: :warning:
 
-image:https://travis-ci.org/adminfaces/quarkus-criteria.svg[Build Status (Travis CI), link=https://travis-ci.org/adminfaces/quarkus-criteria]
+image:https://travis-ci.org/quarkus-criteria/quarkus-criteria.svg[Build Status (Travis CI), link=https://travis-ci.org/quarkus-criteria/quarkus-criteria]
 
 Enables type safe and fluent criteria API for Quarkus applications via https://deltaspike.apache.org/documentation/data.html#JPACriteriaAPISupport[DeltaSpike Criteria^].
 
@@ -25,7 +25,7 @@ Enables type safe and fluent criteria API for Quarkus applications via https://d
 [source, xml]
 ----
 <dependency>
-    <groupId>com.github.adminfaces</groupId>
+    <groupId>com.github.quarkus.criteria</groupId>
     <artifactId>quarkus-criteria</artifactId>
     <version>1.0.0</version>
 </dependency>
@@ -170,7 +170,7 @@ public class CarService extends CrudService<Car> implements Serializable {
 }
 ----
 
-TIP: More examples in https://github.com/adminfaces/quarkus-criteria/blob/master/system-tests/src/test/java/com/github/adminfaces/quarkus/criteria/CrudServiceIt.java#L31[integration tests^] or in https://github.com/adminfaces/quarkus-criteria/blob/master/system-tests/src/main/java/com/github/adminfaces/quarkus/criteria/QuarkusCriteriaApp.java#L37[sample app^].
+TIP: More examples in https://github.com/quarkus-criteria/quarkus-criteria/blob/master/system-tests/src/test/java/com/github/quarkus/criteria/CrudServiceIt.java#L31[integration tests^] or in https://github.com/quarkus-criteria/quarkus-criteria/blob/master/system-tests/src/main/java/com/github/quarkus/criteria/QuarkusCriteriaApp.java#L37[sample app^].
 
 
 ==== BaseCriteriaSupport
@@ -225,6 +225,7 @@ You can query by example using `exampleBuilder`:
                   .getResultList();
 ----
 
+TIP: More examples https://github.com/quarkus-criteria/quarkus-criteria/blob/master/system-tests/src/test/java/com/github/quarkus/criteria/CriteriaByExampleIt.java#L27[can be found here].
 
 
 == Run sample application

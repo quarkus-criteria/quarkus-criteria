@@ -2,7 +2,7 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
-    <groupId>com.github.adminfaces</groupId>
+    <groupId>com.github.quarkus.criteria</groupId>
     <artifactId>quarkus-criteria-parent</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
@@ -25,9 +25,9 @@
         </license>
     </licenses>
     <scm>
-        <connection>scm:git:https://github.com/adminfaces/quarkus-criteria.git</connection>
-        <developerConnection>scm:git:git@github.com:adminfaces/quarkus-criteria.git</developerConnection>
-        <url>https://github.com/adminfaces/quarkus-criteria.git</url>
+        <connection>scm:git:https://github.com/quarkus-criteria/quarkus-criteria.git</connection>
+        <developerConnection>scm:git:git@github.com:quarkus-criteria/quarkus-criteria.git</developerConnection>
+        <url>https://github.com/quarkus-criteria/quarkus-criteria.git</url>
         <tag>HEAD</tag>
     </scm>
 
