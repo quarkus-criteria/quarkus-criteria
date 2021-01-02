@@ -13,7 +13,7 @@
 :caution-caption: :fire:
 :warning-caption: :warning:
 
-image:https://travis-ci.org/quarkus-criteria/quarkus-criteria.svg[Build Status (Travis CI), link=https://travis-ci.org/quarkus-criteria/quarkus-criteria]
+image:https://github.com/quarkus-criteria/quarkus-criteria/workflows/Quarkus%20Criteria%20Build/badge.svg[Build Status, link=https://github.com/quarkus-criteria/quarkus-criteria/actions?query=workflow%3A%22Quarkus+Criteria+Build%22]
 
 Enables type safe and fluent criteria API for Quarkus applications via https://deltaspike.apache.org/documentation/data.html#JPACriteriaAPISupport[DeltaSpike Criteria^].
 
