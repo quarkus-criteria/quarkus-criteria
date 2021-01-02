@@ -125,9 +125,7 @@ The easiest way to use quarkus criteria to query an entity is via *generic injec
                             .likeIgnoreCase(SalesPoint_.name, "%Tesla%"))
                     .or(crudService.criteria().likeIgnoreCase(Car_.model, "%1%"),
                             crudService.criteria().like(Car_.name, "%2%"));
-    // list by example
-    Car carExample = new Car().model("Ferrari");
-    List<Car> cars = carService.example(carExample, Car_.model).getResultList()
+
     // aggregation function
    Double result = criteria()
         .select(Double.class, sum(Car_.price))
@@ -173,6 +171,60 @@ public class CarService extends CrudService<Car> implements Serializable {
 ----
 
 TIP: More examples in https://github.com/adminfaces/quarkus-criteria/blob/master/system-tests/src/test/java/com/github/adminfaces/quarkus/criteria/CrudServiceIt.java#L31[integration tests^] or in https://github.com/adminfaces/quarkus-criteria/blob/master/system-tests/src/main/java/com/github/adminfaces/quarkus/criteria/QuarkusCriteriaApp.java#L37[sample app^].
+
+
+==== BaseCriteriaSupport
+
+If you don't want CRUD support you can inherit directly from `BaseCriteriaSupport`:
+
+
+[source, java]
+----
+@ApplicationScoped
+public class CarCriteria extends BaseCriteriaSupport<Car> {
+    /**
+     * getEntityManager().createQuery("SELECT SUM(c.price) FROM Car c WHERE upper(c.model) like :model", Double.class)
+     *                 .setParameter("model", model).getSingleResult();
+     */
+    public Double getTotalPriceByModel(String model) {
+        return criteria()
+                  .select(Double.class, sum(Car_.price))
+                .likeIgnoreCase(Car_.model, model)
+                .getSingleResult();
+    }
+}
+----
+
+==== Criteria by example
+
+You can query by example using `exampleBuilder`:
+
+
+[source, java]
+----
+   Car carExample = new Car().model("Ferrari");
+   List<Car> cars = carService
+            .exampleBuilder.of(carExample)
+            .example(Car_.model).build()
+            .getResultList();
+
+  // a bit more complex example
+  Car carExample = new Car();
+  SalesPoint salesPoint = salesPointCrud.criteria()
+          .eq(SalesPoint_.name, "Nissan")
+          .getSingleResult();
+  List<SalesPoint> salesPoints = List.of(salesPoint);
+  carExample.setSalesPoints(salesPoints);
+  List<Car> cars = carService
+                  .exampleBuilder.of(carExample)
+                  .usingCriteria(carService.criteria()
+                          .distinct()
+                          .orderAsc(Car_.id))
+                  .usingFetch(true)
+                  .example(Car_.salesPoints).build()
+                  .getResultList();
+----
+
 
 
 == Run sample application

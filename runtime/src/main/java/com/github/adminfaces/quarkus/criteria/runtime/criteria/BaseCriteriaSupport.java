@@ -30,11 +30,13 @@ public class BaseCriteriaSupport<T extends PersistenceEntity> extends CriteriaSu
     protected EntityManager entityManager;
     protected Class<T> entityClass;
     protected Class<Serializable> entityKey;
+    public ExampleBuilder<T> exampleBuilder;
 
     @PostConstruct
     @ActivateRequestContext
     public void init() {
         resolveEntityClass();
+        exampleBuilder = new ExampleBuilder<>(entityManager);
     }
 
     protected void resolveEntityClass() {
@@ -83,9 +85,9 @@ public class BaseCriteriaSupport<T extends PersistenceEntity> extends CriteriaSu
     }
 
     private Class resolveEntityKey(Class entityClass) {
-        Metamodel metamodel = getEntityManager().getMetamodel();
-        EntityType entity = metamodel.entity(entityClass);
-        Set<SingularAttribute> singularAttributes = entity.getSingularAttributes();
+        final Metamodel metamodel = getEntityManager().getMetamodel();
+        final EntityType entity = metamodel.entity(entityClass);
+        final Set<SingularAttribute> singularAttributes = entity.getSingularAttributes();
         for (SingularAttribute singularAttribute : singularAttributes) {
             if (singularAttribute.isId()) {
                 return singularAttribute.getJavaType();

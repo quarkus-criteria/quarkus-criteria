@@ -61,17 +61,6 @@ public class CrudServiceIt {
 
     @Test
     @DataSet("cars.yml")
-    public void shouldFindCarByExample() {
-        Car carExample = new Car().model("Ferrari");
-        List<Car> cars = carService.example(carExample, Car_.model).getResultList();
-        AssertionsForInterfaceTypes.assertThat(cars).isNotNull()
-                .hasSize(1)
-                .extracting("id")
-                .contains(-1);
-    }
-
-    @Test
-    @DataSet("cars.yml")
     public void shouldFindCarsByListOfIds() {
         Car ferrari = new Car(-1);
         Car mustang = new Car(-2);
@@ -358,42 +347,6 @@ public class CrudServiceIt {
 
     @Test
     @DataSet("cars.yml")
-    public void shouldFindCarsByExample() {
-        Car carExample = new Car().model("Ferrari");
-        List<Car> cars = crudService.example(carExample, Car_.model).getResultList();
-        AssertionsForInterfaceTypes.assertThat(cars).isNotNull().hasSize(1)
-                .extracting("model")
-                .contains("Ferrari");
-
-        carExample = new Car().model("porche").name("%avenger");
-        cars = crudService.exampleLike(carExample, Car_.name, Car_.model).getResultList();
-
-        AssertionsForInterfaceTypes.assertThat(cars).isNotNull().hasSize(1)
-                .extracting("name")
-                .contains("porche avenger");
-    }
-
-    @DataSet("cars.yml")
-    public void shouldFindCarsByExampleWithoutPassingAttributes() {
-        Car carExample = new Car().model("Ferrari");
-        List<Car> cars = crudService.example(carExample).getResultList();
-        AssertionsForInterfaceTypes.assertThat(cars).isNotNull().hasSize(1)
-                .extracting("model")
-                .contains("Ferrari");
-    }
-
-    @Test
-    @DataSet("cars.yml")
-    public void shouldFindCarsByExampleLikeWithoutPassingAttributes() {
-        Car carExample = new Car().model("porche").name("%avenger");
-        List<Car> cars = crudService.exampleLike(carExample).getResultList();
-        AssertionsForInterfaceTypes.assertThat(cars).isNotNull().hasSize(1)
-                .extracting("name")
-                .contains("porche avenger");
-    }
-
-    @Test
-    @DataSet("cars.yml")
     public void shoulGetTotalPriceByModel() {
         assertEquals((Double) 20380.53, carService.getTotalPriceByModel(new Car().model("%porche%")));
     }
@@ -427,65 +380,6 @@ public class CrudServiceIt {
     @DataSet("cars-full.yml")
     public void shouldListCarsBySalesPointAddress() {
         List<Car> carsFound = carService.findBySalesPointAddress("Nissan address");
-        AssertionsForInterfaceTypes.assertThat(carsFound).isNotNull().hasSize(1)
-                .extracting("name")
-                .contains("Sentra");
-    }
-
-    @Test
-    @DataSet("cars-full.yml")
-    public void shouldListCarsBySalesPointAddressByExample() {
-        Car carExample = new Car();
-        SalesPoint salesPoint = new SalesPoint(new SalesPointPK(2L, 1L));
-        List<SalesPoint> salesPoints = new ArrayList<>();
-        salesPoints.add(salesPoint);
-        carExample.setSalesPoints(salesPoints);
-        List<Car> carsFound = carService.example(carExample, Car_.salesPoints).getResultList();
-        AssertionsForInterfaceTypes.assertThat(carsFound).isNotNull().hasSize(1)
-                .extracting("name")
-                .contains("Sentra");
-    }
-
-    @Test
-    @DataSet("cars-full.yml")
-    public void shouldFindCarByMultipleExampleCriteria() {
-        Car carExample = new Car().model("SE");
-        SalesPoint salesPoint = new SalesPoint(new SalesPointPK(2L, 1L));
-        List<SalesPoint> salesPoints = new ArrayList<>();
-        salesPoints.add(salesPoint);
-        carExample.setSalesPoints(salesPoints);
-
-        Brand brand = new Brand(2L);
-
-        carExample.setBrand(brand);//model SE, brand: Nissan, salesPint: Nissan Sales
-
-        Criteria<Car, Car> criteriaByExample = carService.example(carExample, Car_.model, Car_.brand, Car_.salesPoints);
-
-        assertThat(carService.count(criteriaByExample).intValue()).isEqualTo(1);
-
-        List<Car> carsFound = criteriaByExample.getResultList();
-        AssertionsForInterfaceTypes.assertThat(carsFound).isNotNull().hasSize(1)
-                .extracting("name")
-                .contains("Sentra");
-    }
-
-    @Test
-    @DataSet("cars-full.yml")
-    public void shouldFindCarByExampleUsingAnExistingCriteria() {
-        Criteria<Car, Car> criteria = crudService.criteria()
-                .join(Car_.brand, carService.where(Brand.class)
-                        .eq(Brand_.name, "Nissan")
-                ); //cars with brand nissan
-
-        Car carExample = new Car().model("SE");
-        //will add a restriction by car 'model' using example criteria
-        Criteria<Car, Car> criteriaByExample = carService.example(criteria, carExample, Car_.model);
-
-        criteriaByExample = carService.example(criteriaByExample, carExample, Car_.salesPoints);
-
-        assertThat(carService.count(criteriaByExample).intValue()).isEqualTo(1);
-
-        List<Car> carsFound = criteriaByExample.getResultList();
         AssertionsForInterfaceTypes.assertThat(carsFound).isNotNull().hasSize(1)
                 .extracting("name")
                 .contains("Sentra");

@@ -138,7 +138,7 @@ public class CarService extends CrudService<Car> implements Serializable {
                 .getResultList();
     }
 
-    public Criteria<Car, Car> carsCriteria() {
+    public List<Car> listCars() {
         return criteria()
                 .fetch(Car_.salesPoints, JoinType.LEFT)
                 .join(Car_.brand, where(Brand.class)
@@ -147,10 +147,11 @@ public class CarService extends CrudService<Car> implements Serializable {
                 .join(Car_.salesPoints, where(SalesPoint.class)
                         .likeIgnoreCase(SalesPoint_.name, "%Tesla%"))
                 .or(criteria().likeIgnoreCase(Car_.model, "%1%"),
-                        criteria().like(Car_.name, "%2%"));
+                        criteria().like(Car_.name, "%2%"))
+                .getResultList();
     }
 
-    public Criteria<Car, CarWithNameAndPrice> carsCriteriaProjection() {
+    public List<CarWithNameAndPrice> carsProjection() {
         return criteria()
                 .select(CarWithNameAndPrice.class, attribute(Car_.name), attribute(Car_.price))
                 .join(Car_.brand, where(Brand.class)
@@ -158,7 +159,8 @@ public class CarService extends CrudService<Car> implements Serializable {
                                         .eq(Brand_.name, "Nissan"),
                                 criteria(Brand.class).eq(Brand_.name, "Tesla")))
                 .join(Car_.salesPoints, where(SalesPoint.class)
-                        .likeIgnoreCase(SalesPoint_.name, "%Tesla%"));
+                        .likeIgnoreCase(SalesPoint_.name, "%Tesla%"))
+                .getResultList();
     }
 
 

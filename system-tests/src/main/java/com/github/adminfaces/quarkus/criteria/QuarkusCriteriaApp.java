@@ -40,15 +40,13 @@ public class QuarkusCriteriaApp implements QuarkusApplication {
             List<SalesPoint> salesPoints = insertSalesPoints();
             insertCars(brands, salesPoints);
             System.out.println("======================================================================================");
-            Criteria<Car, Car> carsCriteria = carService.carsCriteria();
+            List<Car> cars = carService.listCars();
             System.out.println("Printing cars containing '1' in model or '2' in name that are from 'Nissan' or 'Tesla' brand and has a salesPoint which name contains 'Tesla'");
-            carsCriteria.getResultList()
-                    .forEach(System.out::println);
+            cars.forEach(System.out::println);
             System.out.println("======================================================================================");
             System.out.println("Selecting car model and price and mapping to a DTO");
-            Criteria<Car, CarWithNameAndPrice> carsCriteriaProjection = carService.carsCriteriaProjection();
-            carsCriteriaProjection.getResultList()
-                    .forEach(System.out::println);
+            List<CarWithNameAndPrice> carsProjection = carService.carsProjection();
+            carsProjection.forEach(System.out::println);
             System.out.println("======================================================================================");
             System.out.println("Models names containing '4':  " + getAllModelsContaining4());
             System.out.println("======================================================================================");
@@ -76,9 +74,14 @@ public class QuarkusCriteriaApp implements QuarkusApplication {
                 .getSingleResult();
         List<SalesPoint> salesPoints = List.of(salesPoint);
         carExample.setSalesPoints(salesPoints);
-        return carService.example(carService.criteria()
-                .distinct()
-                .orderAsc(Car_.id), carExample, true, Car_.salesPoints).getResultList();
+        return carService
+                .exampleBuilder.of(carExample)
+                .usingCriteria(carService.criteria()
+                        .distinct()
+                        .orderAsc(Car_.id))
+                .usingFetch(true)
+                .example(Car_.salesPoints).build()
+                .getResultList();
     }
 
     private void insertCars(List<Brand> brands, List<SalesPoint> salesPoints) {

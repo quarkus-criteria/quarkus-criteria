@@ -39,26 +39,21 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
     @Inject
     protected void CrudService(InjectionPoint ip) {
         if (ip != null && ip.getType() != null && ip.getMember() != null) {
-            try {
-                //Used for generic service injection, e.g: @Inject @Service CrudService<Entity,Key>
-                resolveEntity(ip);
+            try {  //Used for generic service injection, e.g: @Inject @Service CrudService<Entity>
+                ParameterizedType type = (ParameterizedType) ip.getType();
+                Type[] typeArgs = type.getActualTypeArguments();
+                entityClass = (Class<T>) typeArgs[0];
             } catch (Exception e) {
             }
         }
-        if (entityClass == null) {
-            //Used on service inheritance, e.g: MyService extends CrudService<Entity, Key>
-            ParameterizedType parameterizedType = getParameterizedType();
-            entityClass = (Class<T>) parameterizedType.getActualTypeArguments()[0];
-        }
     }
 
-    private void resolveEntity(InjectionPoint ip) {
-        ParameterizedType type = (ParameterizedType) ip.getType();
-        Type[] typeArgs = type.getActualTypeArguments();
-        entityClass = (Class<T>) typeArgs[0];
-    }
-
+    /**
+     * @param filter Contains pagination configuration
+     * @return A list based on pagination filter
+     */
     public List<T> paginate(Filter<T> filter) {
+        validateFilter(filter);
         Criteria<T, T> criteria = configRestrictions(filter);
         configSort(filter, criteria);
         return criteria.createQuery()
@@ -66,27 +61,6 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
                 .setMaxResults(filter.getPageSize())
                 .getResultList();
     }
-
-    protected void configSort(Filter<T> filter, Criteria<T, T> criteria) {
-        if (!filter.getMultiSort().isEmpty()) { //multi sort
-            for (MultiSort multiSort : filter.getMultiSort()) {
-                addSort(criteria, multiSort.getSort(), multiSort.getSortField());
-            }
-        } else { //single field sort 
-            addSort(criteria, filter.getSort(), filter.getSortField());
-        }
-    }
-
-    /**
-     * Called before pagination, should be overridden. By default there is no restrictions.
-     *
-     * @param filter used to create restrictions
-     * @return a criteria with configured restrictions
-     */
-    protected Criteria<T, T> configRestrictions(Filter<T> filter) {
-        return criteria();
-    }
-
 
     @Transactional
     public void insert(T entity) {
@@ -167,12 +141,6 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
         return removedEntitiesCount;
     }
 
-    private Set<Serializable> collectEntitiesPk(List<T> entities) {
-        return entities.stream()
-                .map(e -> (Serializable) e.getId())
-                .collect(Collectors.toSet());
-    }
-
     @Transactional
     public T update(T entity) {
         if (entity == null) {
@@ -241,185 +209,53 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
         return entity;
     }
 
-    /**
-     * A 'criteria by example' will be created using an example entity. It will use <code>eq</code> for comparing 'simple' attributes,
-     * for <code>oneToOne</code> associations the entity PK will be compared and for oneToMany association an <code>in</code> for comparing associated entities PKs.
-     *
-     * @param example         An entity whose attribute's value will be used for creating a criteria
-     * @param usingAttributes attributes from example entity to consider. If no attribute is provided then non null attributes will be used.
-     * @return A criteria restricted by example.
-     * @throws RuntimeException If no attribute is provided.
-     */
-    public Criteria example(T example, Attribute<T, ?>... usingAttributes) {
-        return example(criteria(), example, usingAttributes);
-    }
-
-    public Criteria example(T example, boolean fetch, Attribute<T, ?>... usingAttributes) {
-        return example(criteria(), example, fetch, usingAttributes);
-    }
-
-    public Criteria example(Criteria criteria, T example, Attribute<T, ?>... usingAttributes) {
-        return example(criteria, example, false, usingAttributes);
-    }
-
-    /**
-     * This example criteria will add restrictions to an existing criteria based on an example entity. It will use <code>eq</code> for comparing 'simple' attributes,
-     * for <code>oneToOne</code> associations the entity PK will be compared and for oneToMany association an <code>in</code> for comparing associated entities PKs
-     *
-     * @param criteria        a criteria to add restrictions based on the example entity.
-     * @param example         An entity whose attribute's value will be used for creating a criteria
-     * @param fetch           If true, associations will be fetched in result mapping
-     * @param usingAttributes attributes from example entity to consider. If no attribute is provided then non null attributes will be used.
-     * @return A criteria restricted by example.
-     * @throws RuntimeException If no attribute is provided.
-     */
-    public Criteria example(Criteria criteria, T example, boolean fetch, Attribute<T, ?>... usingAttributes) {
-        if (criteria == null) {
-            criteria = criteria();
-        }
-        if (usingAttributes == null || usingAttributes.length == 0) {
-            usingAttributes = resolveEntityAttributes(example);
-        }
-        for (Attribute<T, ?> usingAttribute : usingAttributes) {
-            if (usingAttribute instanceof SingularAttribute) {
-                addEqExampleRestriction(criteria, example, fetch, usingAttribute);
-            } else if (usingAttribute instanceof PluralAttribute) {
-                addInExampleRestriction(criteria, example, fetch, usingAttribute);
-            }
-        }
-        return criteria;
-    }
-
-    private Attribute<T, ?>[] resolveEntityAttributes(T example) {
-        Set<Attribute<?, ?>> attributes = (Set<Attribute<?, ?>>) getEntityManager().getMetamodel().entity(example.getClass()).getAttributes();
-        if (attributes != null && !attributes.isEmpty()) {
-            return attributes.toArray(new Attribute[0]);
-        }
-        return Collections.emptyList().toArray(new Attribute[0]);
-    }
-
-    private SingularAttribute<T, String>[] resolveEntitySingularStringAttributes(T example) {
-        Set<SingularAttribute<?, ?>> singularAttributes = (Set<SingularAttribute<?, ?>>) getEntityManager().getMetamodel().entity(example.getClass()).getSingularAttributes();
-        List<SingularAttribute<T, String>> stringAttributes = new ArrayList<>();
-        if (singularAttributes != null && !singularAttributes.isEmpty()) {
-            for (SingularAttribute<?, ?> singularAttribute : singularAttributes) {
-                if (singularAttribute.getType().getJavaType().isAssignableFrom(String.class)) {
-                    stringAttributes.add((SingularAttribute<T, String>) singularAttribute);
-                }
-            }
-        }
-        return stringAttributes.toArray(new SingularAttribute[0]);
-    }
-
-
-    private void addEqExampleRestriction(Criteria criteria, T example, boolean fetch, Attribute<T, ?> attribute) {
-        if (attribute.getJavaMember() instanceof Field) {
-            Field field = (Field) attribute.getJavaMember();
-            field.setAccessible(true);
-            try {
-                Object value = field.get(example);
-                if (value != null) {
-                    LOG.fine(format("Adding an 'eq' restriction on attribute %s using value %s.", attribute.getName(), value));
-                    if (fetch) {
-                        criteria.fetch((SingularAttribute) attribute, JoinType.INNER);
-                    }
-                    criteria.eq((SingularAttribute) attribute, value);
-                }
-            } catch (IllegalAccessException e) {
-                LOG.warning(format("Could not get value from field %s of entity %s.", field.getName(), example.getClass().getName()));
-            }
-        }
-    }
-
-    private void addInExampleRestriction(Criteria criteria, T example, boolean fetch, Attribute<T, ?> attribute) {
-        PluralAttribute<T, ?, ?> listAttribute = (PluralAttribute<T, ?, ?>) attribute;
-        Class joinClass = listAttribute.getElementType().getJavaType();
-        Criteria joinCriteria = where(joinClass, JoinType.LEFT);
-        if(fetch) {
-            criteria.fetch(listAttribute, JoinType.LEFT);
-        }
-        if (listAttribute instanceof ListAttribute) {
-            criteria.join((ListAttribute) listAttribute, joinCriteria);
-        } else if (listAttribute instanceof SetAttribute) {
-            criteria.join((SetAttribute) listAttribute, joinCriteria);
-        } else if (listAttribute instanceof MapAttribute) {
-            criteria.join((MapAttribute) listAttribute, joinCriteria);
-        } else if (listAttribute instanceof CollectionAttribute) {
-            criteria.join((CollectionAttribute) listAttribute, joinCriteria);
-        }
-        if (attribute.getJavaMember() instanceof Field) {
-            Field field = (Field) attribute.getJavaMember();
-            field.setAccessible(true);
-            try {
-                Object value = field.get(example);
-                if (value != null) {
-                    LOG.fine(format("Adding an 'in'restriction on attribute %s using value %s.", attribute.getName(), value));
-                    Collection<PersistenceEntity> association = (Collection<PersistenceEntity>) value;
-                    SingularAttribute id = getEntityManager().getMetamodel().entity(listAttribute.getElementType().getJavaType()).getId(association.iterator().next().getId().getClass());
-                    List<Serializable> ids = new ArrayList<>();
-                    for (PersistenceEntity persistenceEntity : association) {
-                        ids.add(persistenceEntity.getId());
-                    }
-
-                    joinCriteria.in(id, ids);
-                }
-            } catch (IllegalAccessException e) {
-                LOG.warning(format("Could not get value from field %s of entity %s.", field.getName(), example.getClass().getName()));
-            }
-        }
-    }
-
-
-    /**
-     * A 'criteria by example' will be created using an example entity. ONLY <code>String</code> attributes will be considered.
-     * It will use 'likeIgnoreCase' for comparing STRING attributes of the example entity.
-     *
-     * @param example         An entity whose attribute's value will be used for creating a criteria
-     * @param usingAttributes attributes from example entity to consider. If no attribute is provided then non null String attributes will be used.
-     * @return A criteria restricted by example using 'likeIgnoreCase' for comparing attributes
-     * @throws RuntimeException If no attribute is provided.
-     */
-    public Criteria exampleLike(T example, SingularAttribute<T, String>... usingAttributes) {
-        return exampleLike(criteria(), example, usingAttributes);
-    }
-
-    /**
-     * @param criteria        a pre populated criteria to add example based <code>like</code> restrictions
-     * @param example         An entity whose attribute's value will be used for creating a criteria
-     * @param usingAttributes attributes from example entity to consider. If no attribute is provided then non null String attributes will be used.
-     * @return A criteria restricted by example using <code>likeIgnoreCase</code> for comparing attributes
-     * @throws RuntimeException If no attribute is provided.
-     */
-    public Criteria exampleLike(Criteria criteria, T example, SingularAttribute<T, String>... usingAttributes) {
-
-        if (usingAttributes == null || usingAttributes.length == 0) {
-            usingAttributes = resolveEntitySingularStringAttributes(example);
-        }
-
-        if (criteria == null) {
-            criteria = criteria();
-        }
-
-        for (SingularAttribute<T, ?> attribute : usingAttributes) {
-            if (attribute.getJavaMember() instanceof Field) {
-                Field field = (Field) attribute.getJavaMember();
-                field.setAccessible(true);
-                try {
-                    Object value = field.get(example);
-                    if (value != null) {
-                        LOG.fine(format("Adding restriction by example on attribute %s using value %s.", attribute.getName(), value));
-                        criteria.likeIgnoreCase(attribute, value.toString());
-                    }
-                } catch (IllegalAccessException e) {
-                    LOG.warning(format("Could not get value from field %s of entity %s.", field.getName(), example.getClass().getName()));
-                }
-            }
-        }
-        return criteria;
-    }
-
     public void setEntityManager(EntityManager entityManager) {
         this.entityManager = entityManager;
+    }
+
+
+    public void beforeAll(T entity) {
+    }
+
+    public void beforeInsert(T entity) {
+    }
+
+    public void afterInsert(T entity) {
+    }
+
+    public void beforeUpdate(T entity) {
+    }
+
+    public void afterUpdate(T entity) {
+    }
+
+    public void beforeRemove(T entity) {
+    }
+
+    public void afterRemove(T entity) {
+    }
+
+    public void afterAll(T entity) {
+    }
+
+    protected void configSort(Filter<T> filter, Criteria<T, T> criteria) {
+        if (!filter.getMultiSort().isEmpty()) { //multi sort
+            for (MultiSort multiSort : filter.getMultiSort()) {
+                addSort(criteria, multiSort.getSort(), multiSort.getSortField());
+            }
+        } else { //single field sort
+            addSort(criteria, filter.getSort(), filter.getSortField());
+        }
+    }
+
+    /**
+     * Called before pagination, should be overridden. By default there is no restrictions.
+     *
+     * @param filter used to create restrictions
+     * @return a criteria with configured restrictions
+     */
+    protected Criteria<T, T> configRestrictions(Filter<T> filter) {
+        return criteria();
     }
 
     /**
@@ -454,27 +290,15 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
         }
     }
 
-    public void beforeAll(T entity) {
+    private void validateFilter(Filter<T> filter) {
+        if(filter == null) {
+            throw new RuntimeException("Pagination filter should be provided.");
+        }
     }
 
-    public void beforeInsert(T entity) {
-    }
-
-    public void afterInsert(T entity) {
-    }
-
-    public void beforeUpdate(T entity) {
-    }
-
-    public void afterUpdate(T entity) {
-    }
-
-    public void beforeRemove(T entity) {
-    }
-
-    public void afterRemove(T entity) {
-    }
-
-    public void afterAll(T entity) {
+    private Set<Serializable> collectEntitiesPk(List<T> entities) {
+        return entities.stream()
+                .map(e -> (Serializable) e.getId())
+                .collect(Collectors.toSet());
     }
 }
