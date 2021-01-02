@@ -14,7 +14,7 @@ car:
     name: "porche avenger"
     price: 1390.3
     version: 0
-  - id: js:Math.floor(Math.random() * 999999)
+  - id: -4
     model: "Porche274"
     name: "porche rally"
     price: 18990.23

@@ -231,12 +231,12 @@ public class CrudServiceIt {
         List<Car> cars = carService.paginate(carFilter);
         assertNotNull(cars);
         assertEquals(cars.size(), 1);
-        assertEquals(cars.get(0).getId(), Integer.valueOf(-3));
+        assertEquals(cars.get(0).getId(), Integer.valueOf(-4));
         carFilter.setFirst(1);//get second database page
         cars = carService.paginate(carFilter);
         assertNotNull(cars);
         assertEquals(cars.size(), 1);
-        assertEquals(cars.get(0).getId(), Integer.valueOf(-2));
+        assertEquals(cars.get(0).getId(), Integer.valueOf(-3));
         carFilter.setFirst(0);
         carFilter.setPageSize(4);
         cars = carService.paginate(carFilter);
