@@ -24,7 +24,7 @@ import static java.lang.String.format;
 
 /**
  * @author rmpestano
- * Utility service for crud operations
+ * A CRUD
  */
 @Service
 @Dependent
@@ -265,7 +265,6 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
      * @param idsType  the type of the pk list, e.g new Long[0]
      * @return primitive array containing entities pks.
      */
-    @SuppressWarnings("unchecked")
     protected <ID extends Serializable> ID[] toListOfIds(Collection<? extends PersistenceEntity> entities, ID[] idsType) {
         Set<ID> ids = new HashSet<>();
         for (PersistenceEntity entity : entities) {

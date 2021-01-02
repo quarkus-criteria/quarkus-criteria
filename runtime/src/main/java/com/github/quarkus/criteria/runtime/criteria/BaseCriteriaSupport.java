@@ -54,12 +54,21 @@ public class BaseCriteriaSupport<T extends PersistenceEntity> extends CriteriaSu
         ParameterizedType parameterizedType;
         if (getClass().getGenericSuperclass() instanceof ParameterizedType) {
             parameterizedType = (ParameterizedType) getClass().getGenericSuperclass();
-        } else if (getClass().getSuperclass().getGenericSuperclass() instanceof ParameterizedType) {
-            parameterizedType = (ParameterizedType) getClass().getSuperclass().getGenericSuperclass();
         } else {
-            parameterizedType = (ParameterizedType) getClass().getSuperclass().getSuperclass().getGenericSuperclass();
+            parameterizedType = resolveParameterizedType(getClass().getSuperclass());
         }
         return parameterizedType;
+    }
+
+    private ParameterizedType resolveParameterizedType(Class<?> superclass) {
+        if (superclass == null) {
+            throw new RuntimeException(format("Could not resolve generic type of %s. Have you tried to extend CrudService<ENTITY> or BaseCriteriaSupport<ENTITY>?", getClass().getName()));
+        }
+        if (superclass.getGenericSuperclass() instanceof ParameterizedType) {
+            ParameterizedType genericSuperclass = (ParameterizedType) getClass().getSuperclass().getGenericSuperclass();
+            return genericSuperclass;
+        }
+        return resolveParameterizedType(superclass.getSuperclass());
     }
 
     /**
