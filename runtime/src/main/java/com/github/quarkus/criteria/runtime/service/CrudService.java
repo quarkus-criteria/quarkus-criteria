@@ -23,8 +23,10 @@ import java.util.stream.Collectors;
 import static java.lang.String.format;
 
 /**
+ * Enables CRUD operations using fluent and type safe criteria on top of the underlying class
+ *
  * @author rmpestano
- * A CRUD
+ * @param <T> The entity type to CRUD
  */
 @Service
 @Dependent
@@ -287,7 +289,7 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
         }
     }
 
-    private void validateFilter(Filter<T> filter) {
+    protected void validateFilter(Filter<T> filter) {
         if(filter == null) {
             throw new RuntimeException("Pagination filter should be provided.");
         }

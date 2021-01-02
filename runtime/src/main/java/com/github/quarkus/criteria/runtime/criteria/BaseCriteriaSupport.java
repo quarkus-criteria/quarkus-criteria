@@ -22,6 +22,10 @@ import java.util.Set;
 
 import static java.lang.String.format;
 
+/**
+ * @author rmpestano
+ * @param <T> Entity type of the criteria support
+ */
 @Dependent
 @Transactional(Transactional.TxType.SUPPORTS)
 public class BaseCriteriaSupport<T extends PersistenceEntity> extends CriteriaSupportHandler<T> implements CriteriaSupport<T>, Serializable {
@@ -37,38 +41,6 @@ public class BaseCriteriaSupport<T extends PersistenceEntity> extends CriteriaSu
     public void init() {
         resolveEntityClass();
         exampleBuilder = new ExampleBuilder<>(entityManager);
-    }
-
-    protected void resolveEntityClass() {
-        if (entityClass == null) {
-            ParameterizedType type = getParameterizedType();
-            Type[] typeArgs = type.getActualTypeArguments();
-            entityClass = (Class<T>) typeArgs[0];
-        }
-        if (entityKey == null) {
-            entityKey = resolveEntityKey(entityClass);
-        }
-    }
-
-    protected ParameterizedType getParameterizedType() {
-        ParameterizedType parameterizedType;
-        if (getClass().getGenericSuperclass() instanceof ParameterizedType) {
-            parameterizedType = (ParameterizedType) getClass().getGenericSuperclass();
-        } else {
-            parameterizedType = resolveParameterizedType(getClass().getSuperclass());
-        }
-        return parameterizedType;
-    }
-
-    private ParameterizedType resolveParameterizedType(Class<?> superclass) {
-        if (superclass == null) {
-            throw new RuntimeException(format("Could not resolve generic type of %s. Have you tried to extend CrudService<ENTITY> or BaseCriteriaSupport<ENTITY>?", getClass().getName()));
-        }
-        if (superclass.getGenericSuperclass() instanceof ParameterizedType) {
-            ParameterizedType genericSuperclass = (ParameterizedType) getClass().getSuperclass().getGenericSuperclass();
-            return genericSuperclass;
-        }
-        return resolveParameterizedType(superclass.getSuperclass());
     }
 
     /**
@@ -93,6 +65,27 @@ public class BaseCriteriaSupport<T extends PersistenceEntity> extends CriteriaSu
         return entityKey;
     }
 
+    protected void resolveEntityClass() {
+        if (entityClass == null) {
+            ParameterizedType type = getParameterizedType();
+            Type[] typeArgs = type.getActualTypeArguments();
+            entityClass = (Class<T>) typeArgs[0];
+        }
+        if (entityKey == null) {
+            entityKey = resolveEntityKey(entityClass);
+        }
+    }
+
+    protected ParameterizedType getParameterizedType() {
+        ParameterizedType parameterizedType;
+        if (getClass().getGenericSuperclass() instanceof ParameterizedType) {
+            parameterizedType = (ParameterizedType) getClass().getGenericSuperclass();
+        } else {
+            parameterizedType = resolveParameterizedType(getClass().getSuperclass());
+        }
+        return parameterizedType;
+    }
+
     private Class resolveEntityKey(Class entityClass) {
         final Metamodel metamodel = getEntityManager().getMetamodel();
         final EntityType entity = metamodel.entity(entityClass);
@@ -103,5 +96,16 @@ public class BaseCriteriaSupport<T extends PersistenceEntity> extends CriteriaSu
             }
         }
         throw new RuntimeException(format("Id property not found for entity %s", entityClass));
+    }
+
+    private ParameterizedType resolveParameterizedType(Class<?> superclass) {
+        if (superclass == null) {
+            throw new RuntimeException(format("Could not resolve generic type of %s. Have you tried to extend CrudService<ENTITY> or BaseCriteriaSupport<ENTITY>?", getClass().getName()));
+        }
+        if (superclass.getGenericSuperclass() instanceof ParameterizedType) {
+            ParameterizedType genericSuperclass = (ParameterizedType) getClass().getSuperclass().getGenericSuperclass();
+            return genericSuperclass;
+        }
+        return resolveParameterizedType(superclass.getSuperclass());
     }
 }

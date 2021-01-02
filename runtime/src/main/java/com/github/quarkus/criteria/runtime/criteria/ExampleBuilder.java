@@ -114,7 +114,7 @@ public class ExampleBuilder<T extends PersistenceEntity> {
                     .forEach(attr -> {
                         SingularAttribute<T, String> attribute = (SingularAttribute<T, String>) attr;
                         if (attribute.getJavaMember() instanceof Field) {
-                            Field field = (Field) attribute.getJavaMember();
+                            final Field field = (Field) attribute.getJavaMember();
                             field.setAccessible(true);
                             try {
                                 Object value = field.get(example);
@@ -133,7 +133,7 @@ public class ExampleBuilder<T extends PersistenceEntity> {
 
         private void addEqExampleRestriction(Attribute<T, ?> attribute) {
             if (attribute.getJavaMember() instanceof Field) {
-                Field field = (Field) attribute.getJavaMember();
+                final Field field = (Field) attribute.getJavaMember();
                 field.setAccessible(true);
                 try {
                     Object value = field.get(example);
@@ -152,8 +152,8 @@ public class ExampleBuilder<T extends PersistenceEntity> {
 
         private void addInExampleRestriction(final Attribute<T, ?> attribute) {
             final PluralAttribute<T, ?, ?> listAttribute = (PluralAttribute<T, ?, ?>) attribute;
-            Class joinClass = listAttribute.getElementType().getJavaType();
-            Criteria joinCriteria = new QueryCriteria(joinClass, example.getClass(), exampleBuilder.entityManager, JoinType.LEFT);
+            final Class joinClass = listAttribute.getElementType().getJavaType();
+            final Criteria joinCriteria = new QueryCriteria(joinClass, example.getClass(), exampleBuilder.entityManager, JoinType.LEFT);
             if (fetch) {
                 criteria.fetch(listAttribute, JoinType.LEFT);
             }
@@ -167,7 +167,7 @@ public class ExampleBuilder<T extends PersistenceEntity> {
                 criteria.join((CollectionAttribute) listAttribute, joinCriteria);
             }
             if (attribute.getJavaMember() instanceof Field) {
-                Field field = (Field) attribute.getJavaMember();
+                final Field field = (Field) attribute.getJavaMember();
                 field.setAccessible(true);
                 try {
                     Object value = field.get(example);

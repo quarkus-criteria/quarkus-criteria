@@ -3,7 +3,6 @@ package com.github.quarkus.criteria.runtime.model;
 import java.util.Objects;
 
 /**
- *
  * @author rmpestano
  */
 public class MultiSort {

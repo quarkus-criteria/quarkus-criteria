@@ -1,7 +1,7 @@
 package com.github.quarkus.criteria.runtime.model;
 
 /**
- * Created by rmpestano
+ * @author rmpestano
  */
 public enum Sort {
 

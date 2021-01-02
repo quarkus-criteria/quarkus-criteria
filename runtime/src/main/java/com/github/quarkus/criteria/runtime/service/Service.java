@@ -8,7 +8,7 @@ import java.lang.annotation.*;
  * <code>
      {@literal @}Inject 
      {@literal @}Service 
-     CrudService&lt;Entity,PK&gt; genericService; 
+     CrudService&lt;Entity&gt; genericService;
  * </code>
  */
 @Retention(RetentionPolicy.RUNTIME)

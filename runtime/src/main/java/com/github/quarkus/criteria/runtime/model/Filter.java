@@ -7,8 +7,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Created by rmpestano
- * class which holds database pagination metadata
+ * Class which holds database pagination metadata
+ *
+ * @author rmpestano
  * @param <T> the entity which this filter refers to.
  */
 public class Filter<T extends PersistenceEntity> implements Serializable {

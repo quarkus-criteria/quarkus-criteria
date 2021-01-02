@@ -8,7 +8,7 @@
     <packaging>pom</packaging>
     <name>Quarkus Criteria Extension</name>
 
-    <description>Enables type safe and fluent criteria API for Quarkus application</description>
+    <description>Enables type safe and fluent criteria API for Quarkus applications</description>
 
     <developers>
         <developer>
