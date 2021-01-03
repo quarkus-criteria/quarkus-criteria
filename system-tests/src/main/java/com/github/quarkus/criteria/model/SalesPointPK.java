@@ -1,5 +1,6 @@
 package com.github.quarkus.criteria.model;
 
+import javax.persistence.Column;
 import javax.persistence.Embeddable;
 import java.io.Serializable;
 import java.util.Objects;
@@ -7,8 +8,10 @@ import java.util.Objects;
 @Embeddable
 public class SalesPointPK implements Serializable{
 
+    @Column(name = "ID1")
     private Long id1;
 
+    @Column(name = "ID2")
     private Long  id2;
 
     public SalesPointPK() {

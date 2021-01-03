@@ -8,7 +8,11 @@ package com.github.quarkus.criteria.model;
 import com.github.quarkus.criteria.runtime.model.BaseEntity;
 
 import javax.persistence.*;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * @author rmpestano
@@ -33,8 +37,9 @@ public class Car extends BaseEntity {
     @OneToOne
     private Brand brand;
 
-    @ManyToMany
-    private List<SalesPoint> salesPoints;
+    @OneToMany(mappedBy = "car", orphanRemoval = true)
+    private List<CarSalesPoint> carSalesPoints = new ArrayList<>();
+
 
     @Version
     private Integer version;
@@ -107,14 +112,27 @@ public class Car extends BaseEntity {
         return this;
     }
 
-    public List<SalesPoint> getSalesPoints() {
-        return salesPoints;
+    public List<CarSalesPoint> getCarSalesPoints() {
+        return carSalesPoints;
+    }
+
+    public void setCarSalesPoints(List<CarSalesPoint> carSalesPoints) {
+        this.carSalesPoints = carSalesPoints;
     }
 
     public Car setSalesPoints(List<SalesPoint> salesPoints) {
-        this.salesPoints = salesPoints;
+        salesPoints.stream()
+                .forEach(this::addSalesPoint);
         return this;
     }
+
+    public Car addSalesPoint(SalesPoint salesPoint) {
+        CarSalesPoint carSalesPoint = new CarSalesPoint(this, salesPoint);
+        carSalesPoints.add(carSalesPoint);
+        salesPoint.getCars().add(carSalesPoint);
+        return this;
+    }
+
 
     public boolean hasModel() {
         return model != null && !"".equals(model.trim());
@@ -129,7 +147,7 @@ public class Car extends BaseEntity {
     }
 
     public boolean hasSalesPoint() {
-        return salesPoints != null && !salesPoints.isEmpty();
+        return carSalesPoints != null && !carSalesPoints.isEmpty();
     }
 
     @Override
@@ -140,7 +158,8 @@ public class Car extends BaseEntity {
                 ", name='" + name + '\'' +
                 ", price=" + price + '\'' +
                 ", brand=" + (brand != null ? brand.getName() : "") +
-                ", salesPoints=" + (salesPoints != null ? salesPoints : "") +
+                ", salesPoints=" + (carSalesPoints != null ? carSalesPoints : "") +
                 '}';
     }
+
 }

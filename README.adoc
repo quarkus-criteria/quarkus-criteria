@@ -14,6 +14,7 @@
 :warning-caption: :warning:
 
 image:https://github.com/quarkus-criteria/quarkus-criteria/workflows/Quarkus%20Criteria%20Build/badge.svg[Build Status, link=https://github.com/quarkus-criteria/quarkus-criteria/actions?query=workflow%3A%22Quarkus+Criteria+Build%22]
+image:https://img.shields.io/maven-central/v/com.github.quarkus.criteria/quarkus-criteria.svg?label=Maven%20Central["Maven Central",link="https://search.maven.org/search?q=g:com.github.quarkus.criteria%20AND%20a:quarkus-criteria"]
 
 Enables type safe and fluent criteria API for Quarkus applications via https://deltaspike.apache.org/documentation/data.html#JPACriteriaAPISupport[DeltaSpike Criteria^].
 
@@ -27,7 +28,7 @@ Enables type safe and fluent criteria API for Quarkus applications via https://d
 <dependency>
     <groupId>com.github.quarkus.criteria</groupId>
     <artifactId>quarkus-criteria</artifactId>
-    <version>1.0.0</version>
+    <version>1.0.0-RC1</version>
 </dependency>
 ----
 
@@ -55,8 +56,8 @@ public class Car extends BaseEntity {
     @OneToOne
     private Brand brand;
 
-    @ManyToMany
-    private List<SalesPoint> salesPoints;
+    @oneToMany
+    private List<CarSalesPoint> salesPoints;
 
     @Version
     private Integer version;
@@ -117,14 +118,18 @@ The easiest way to use quarkus criteria to query an entity is via *generic injec
     crudService.criteria().getResultList()
     // a type safe criteria example
     crudService.criteria()
-       .fetch(Car_.salesPoints, JoinType.LEFT)// fetches salesPoint list in result
-                  .join(Car_.brand, crudService.where(Brand.class)
-                            .or(crudService.criteria(Brand.class).eq(Brand_.name, "Nissan"),
-                                    crudService.criteria(Brand.class).eq(Brand_.name, "Tesla")))
-                    .join(Car_.salesPoints, where(SalesPoint.class)
-                            .likeIgnoreCase(SalesPoint_.name, "%Tesla%"))
-                    .or(crudService.criteria().likeIgnoreCase(Car_.model, "%1%"),
-                            crudService.criteria().like(Car_.name, "%2%"));
+       .distinct()
+       .fetch(Car_.carSalesPoints, JoinType.LEFT) // fetches salesPoint list in result
+       .fetch(Car_.brand)
+       .join(Car_.brand, where(Brand.class)
+            .or(criteria(Brand.class).eq(Brand_.name, "Nissan"), //by brand name
+               criteria(Brand.class).eq(Brand_.name, "Ford")))
+       .join(Car_.carSalesPoints, where(CarSalesPoint.class, JoinType.LEFT)  //by toMany association property (address)
+            .join(CarSalesPoint_.salesPoint, where(SalesPoint.class, JoinType.LEFT) // car -> carSalesPoint -> salesPoint.address
+                    .eqIgnoreCase(SalesPoint_.address, "ford motors address")))
+       .or(criteria().likeIgnoreCase(Car_.model, "%tanium"),
+                     criteria().eq(Car_.name, "Sentra"))
+       .getResultList();
 
     // aggregation function
    Double result = criteria()
@@ -169,6 +174,7 @@ public class CarService extends CrudService<Car> implements Serializable {
 
 }
 ----
+<>
 
 TIP: More examples in https://github.com/quarkus-criteria/quarkus-criteria/blob/master/system-tests/src/test/java/com/github/quarkus/criteria/CrudServiceIt.java#L31[integration tests^] or in https://github.com/quarkus-criteria/quarkus-criteria/blob/master/system-tests/src/main/java/com/github/quarkus/criteria/QuarkusCriteriaApp.java#L37[sample app^].
 
@@ -202,29 +208,45 @@ You can query by example using `exampleBuilder`:
 
 [source, java]
 ----
-   Car carExample = new Car().model("Ferrari");
-   List<Car> cars = carService
-            .exampleBuilder.of(carExample)
-            .example(Car_.model).build()
-            .getResultList();
+ Car carExample = new Car().model("Ferrari");
+ List<Car> cars = carService
+      .exampleBuilder.of(carExample)
+      .usingAttributes(Car_.model).build() <1>
+      .getResultList();
 
-  // a bit more complex example
-  Car carExample = new Car();
-  SalesPoint salesPoint = salesPointCrud.criteria()
-          .eq(SalesPoint_.name, "Nissan")
-          .getSingleResult();
-  List<SalesPoint> salesPoints = List.of(salesPoint);
-  carExample.setSalesPoints(salesPoints);
-  List<Car> cars = carService
-                  .exampleBuilder.of(carExample)
-                  .usingCriteria(carService.criteria()
-                          .distinct()
-                          .orderAsc(Car_.id))
-                  .usingFetch(true)
-                  .example(Car_.salesPoints).build()
-                  .getResultList();
 ----
+<1> select which attributes to consider from example entity, if no attribute is provided then non null properties from example entity  will be considered.
 
+
+A bit more complex example:
+
+[source, java]
+----
+SalesPoint salesPoint = carService.criteria(SalesPoint.class)
+                .like(SalesPoint_.name, "Nissan%")
+                .getSingleResult();
+CarSalesPoint carSalesPoint = new CarSalesPoint(new Car(), salesPoint);
+List<CarSalesPoint> resultList = carSalesPointCrud
+        .exampleBuilder.of(carSalesPoint)
+        .usingCriteria(carSalesPointCrud.criteria()
+                .distinct()
+                .orderAsc(CarSalesPoint_.carSalesPointId))
+        .usingAttributesAndFetch(CarSalesPoint_.salesPoint).build()
+        .getResultList();
+
+assertThat(resultList)
+        .isNotNull()
+        .hasSize(1);
+Car carFound = resultList.get(0).getCar();
+assertThat(carFound)
+        .extracting("id", "name")
+        .contains(2, "Sentra");
+List<CarSalesPoint> carSalesPointFound = carFound.getCarSalesPoints();
+assertThat(carSalesPointFound).hasSize(1);
+assertThat(carSalesPointFound.get(0).getSalesPoint())
+        .extracting("name")
+        .contains("Nissan Sales");
+----
 TIP: More examples https://github.com/quarkus-criteria/quarkus-criteria/blob/master/system-tests/src/test/java/com/github/quarkus/criteria/CriteriaByExampleIt.java#L27[can be found here].
 
 

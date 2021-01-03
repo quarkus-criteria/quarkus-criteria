@@ -2,9 +2,10 @@ package com.github.quarkus.criteria.model;
 
 import com.github.quarkus.criteria.runtime.model.PersistenceEntity;
 
-import javax.persistence.EmbeddedId;
-import javax.persistence.Entity;
-import javax.persistence.Table;
+import javax.persistence.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Objects;
 
 @Entity
 @Table(name = "sales_point")
@@ -16,6 +17,9 @@ public class SalesPoint implements PersistenceEntity {
     private String name;
 
     private String address;
+
+    @OneToMany(mappedBy = "salesPoint", orphanRemoval = true)
+    private List<CarSalesPoint> cars = new ArrayList<>();
 
     public SalesPoint() {
     }
@@ -50,15 +54,38 @@ public class SalesPoint implements PersistenceEntity {
         return this;
     }
 
+    public List<CarSalesPoint> getCars() {
+        return cars;
+    }
+
+    public void setCars(List<CarSalesPoint> cars) {
+        this.cars = cars;
+    }
+
     @Override
     public SalesPointPK getId() {
         return salesPointPK;
     }
 
+
     @Override
     public String toString() {
         return "SalesPoint{" +
-                "name='" + name + '\'' +
+                "salesPointPK=" + salesPointPK +
+                ", name='" + name + '\'' +
                 '}';
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        SalesPoint that = (SalesPoint) o;
+        return Objects.equals(salesPointPK, that.salesPointPK);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(salesPointPK);
     }
 }

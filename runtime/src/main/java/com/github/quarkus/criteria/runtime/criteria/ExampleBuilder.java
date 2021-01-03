@@ -1,5 +1,6 @@
 package com.github.quarkus.criteria.runtime.criteria;
 
+import com.github.quarkus.criteria.runtime.model.ComparisonOperation;
 import com.github.quarkus.criteria.runtime.model.PersistenceEntity;
 import org.apache.deltaspike.data.api.criteria.Criteria;
 import org.apache.deltaspike.data.impl.criteria.QueryCriteria;
@@ -12,6 +13,7 @@ import java.lang.reflect.Field;
 import java.util.*;
 import java.util.logging.Logger;
 
+import static com.github.quarkus.criteria.runtime.model.ComparisonOperation.*;
 import static java.lang.String.format;
 
 /**
@@ -20,6 +22,7 @@ import static java.lang.String.format;
  */
 public class ExampleBuilder<T extends PersistenceEntity> {
     private static final Logger LOG = Logger.getLogger(ExampleBuilder.class.getName());
+    private static final List<ComparisonOperation> NULL_OPERATIONS = Arrays.asList(IS_NULL, NOT_NULL);
 
     private EntityManager entityManager;
 
@@ -37,8 +40,7 @@ public class ExampleBuilder<T extends PersistenceEntity> {
     public static class ExampleBuilderDsl<T extends PersistenceEntity> {
         private Criteria<T, ?> criteria;
         private T example;
-        private boolean fetch;
-        private Set<Attribute<?, ?>> exampleAttributes = new HashSet<>();
+        private boolean hasRestrictions;
         private ExampleBuilder<T> exampleBuilder;
 
         public ExampleBuilderDsl(T example, ExampleBuilder exampleBuilder) {
@@ -51,98 +53,153 @@ public class ExampleBuilder<T extends PersistenceEntity> {
         }
 
         public Criteria<T, ?> build() {
+            if (!hasRestrictions) {
+                criteria = usingAttributes().build();
+            }
             return criteria;
         }
 
+        /**
+         * Add example restrictions to existing criteria
+         *
+         * @param criteria a pre configured criteria
+         */
         public ExampleBuilderDsl usingCriteria(Criteria<T, ?> criteria) {
             this.criteria = criteria;
             return this;
         }
 
         /**
-         * @param fetch when <code>true</code> associations will be fetched in result mapping. Default is false.
-         */
-        public ExampleBuilderDsl usingFetch(boolean fetch) {
-            this.fetch = fetch;
-            return this;
-        }
-
-
-        /**
-         * A 'criteria by example' will be created using the example entity and it's non null attributes to restrict the query.
-         * It will use <code>eq</code> for comparing 'simple' attributes, for <code>oneToOne</code> associations the entity
-         * PK will be compared and for oneToMany association an <code>in</code> for comparing associated entities PKs.
-         */
-        public ExampleBuilderDsl example() {
-            return example(resolveNonNullEntityAttributes(example).toArray(new Attribute[0]));
-        }
-
-        /**
-         * This example criteria will add restrictions to an existing criteria based on the example entity. It will use <code>eq</code> for comparing 'simple' attributes,
-         * for <code>oneToOne</code> associations the entity PK will be compared and for oneToMany association an <code>in</code> for comparing associated entities PKs
+         * A criteria will be created using the example entity and provided attributes to restrict the query.
+         * It will use <code>eq</code> for comparing non association attributes.
+         * For <code>oneToOne</code> associations the entity PK will be compared and for toMany association an <code>in</code>
+         * for comparing associated entities PKs.
          *
          * @param usingAttributes attributes from example entity to consider. If no attribute is provided then non null attributes will be used.
-         * @throws RuntimeException If no attribute is provided.
          */
-        public ExampleBuilderDsl example(final Attribute<T, ?>... usingAttributes) {
-            addEntityAttributes(usingAttributes);
+        public ExampleBuilderDsl usingAttributes(final Attribute<T, ?>... usingAttributes) {
+            return usingAttributes(ComparisonOperation.EQ, usingAttributes);
+        }
+
+        /**
+         * A criteria will be created using the example entity and provided attributes to restrict the query.
+         * It will use <code>eq</code> for comparing non association attributes.
+         * For <code>oneToOne</code> associations the entity PK will be compared and for toMany association an <code>in</code>
+         * for comparing associated entities PKs.
+         * <p>
+         * Associations will be fetched in result mapping.
+         *
+         * @param usingAttributes attributes from example entity to consider. If no attribute is provided then non null attributes will be used.
+         */
+        public ExampleBuilderDsl usingAttributesAndFetch(final Attribute<T, ?>... usingAttributes) {
+            return usingAttributesAndFetch(ComparisonOperation.EQ, usingAttributes);
+        }
+
+        /**
+         * A criteria will be created using the example entity and provided attributes to restrict the query.
+         * It will use comparisonOperation for comparing non association attributes.
+         * For <code>oneToOne</code> associations the entity PK will be compared and for toMany association an <code>in</code> for comparing associated entities PKs
+         *
+         * @param comparisonOperation the operation to be used while comparing the attributes.
+         * @param usingAttributes     attributes from example entity to consider. If no attribute is provided then non null attributes will be used.
+         */
+        public ExampleBuilderDsl usingAttributes(ComparisonOperation comparisonOperation, Attribute<T, ?>... usingAttributes) {
+            return addExampleRestrictions(comparisonOperation, usingAttributes, false);
+        }
+
+        /**
+         * A criteria will be created using the example entity and provided attributes to restrict the query.
+         * It will use comparisonOperation for comparing non association attributes.
+         * For <code>oneToOne</code> associations the entity PK will be compared and for toMany association an <code>in</code> for comparing associated entities PKs
+         * <p>
+         * Associations will be fetched in result mapping.
+         *
+         * @param comparisonOperation the operation to be used while comparing the attributes.
+         * @param usingAttributes     attributes from example entity to consider. If no attribute is provided then non null attributes will be used.
+         */
+        public ExampleBuilderDsl usingAttributesAndFetch(ComparisonOperation comparisonOperation, Attribute<T, ?>... usingAttributes) {
+            return addExampleRestrictions(comparisonOperation, usingAttributes, true);
+        }
+
+        private ExampleBuilderDsl addExampleRestrictions(ComparisonOperation comparisonOperation, Attribute<T, ?>[] usingAttributes, boolean fetch) {
+            hasRestrictions = true;
+            if (usingAttributes == null || usingAttributes.length == 0) {
+                usingAttributes = resolveNonNullEntityAttributes().toArray(new Attribute[0]);
+            }
             for (Attribute<T, ?> usingAttribute : usingAttributes) {
                 if (usingAttribute instanceof SingularAttribute) {
-                    addEqExampleRestriction(usingAttribute);
+                    addSingularRestriction(usingAttribute, comparisonOperation, fetch);
                 } else if (usingAttribute instanceof PluralAttribute) {
-                    addInExampleRestriction(usingAttribute);
+                    addPluralRestriction(usingAttribute, fetch);
                 }
             }
             return this;
         }
 
-
-        /**
-         * A 'criteria by example' will be created using the example entity. ONLY <code>String</code> attributes will be considered.
-         * It will use 'likeIgnoreCase' for comparing STRING attributes of the example entity.
-         *
-         * @param usingAttributes attributes from example entity to consider. If no attribute is provided then non null String attributes will be used.
-         * @return A criteria restricted by example using <code>likeIgnoreCase</code> for comparing attributes
-         */
-        public ExampleBuilderDsl exampleLike(SingularAttribute<T, String>... usingAttributes) {
-            if (usingAttributes == null || usingAttributes.length == 0) {
-                usingAttributes = resolveEntitySingularStringAttributes();
-            }
-            addEntityAttributes(usingAttributes);
-            exampleAttributes.stream()
-                    .filter(attr -> attr instanceof SingularAttribute)
-                    .forEach(attr -> {
-                        SingularAttribute<T, String> attribute = (SingularAttribute<T, String>) attr;
-                        if (attribute.getJavaMember() instanceof Field) {
-                            final Field field = (Field) attribute.getJavaMember();
-                            field.setAccessible(true);
-                            try {
-                                Object value = field.get(example);
-                                if (value != null) {
-                                    LOG.fine(format("Adding restriction by example on attribute %s using value %s.", attribute.getName(), value));
-                                    criteria.likeIgnoreCase(attribute, value.toString());
-                                }
-                            } catch (IllegalAccessException e) {
-                                LOG.warning(format("Could not get value from field %s of entity %s.", field.getName(), example.getClass().getName()));
-                            }
-                        }
-                    });
-
-            return this;
-        }
-
-        private void addEqExampleRestriction(Attribute<T, ?> attribute) {
+        private void addSingularRestriction(final Attribute<T, ?> attribute, ComparisonOperation operation, boolean fetch) {
             if (attribute.getJavaMember() instanceof Field) {
                 final Field field = (Field) attribute.getJavaMember();
                 field.setAccessible(true);
                 try {
-                    Object value = field.get(example);
-                    if (value != null) {
-                        LOG.fine(format("Adding an 'eq' restriction on attribute %s using value %s.", attribute.getName(), value));
+                    final Object value = field.get(example);
+                    if (operation == null) {
+                        operation = ComparisonOperation.EQ;
+                    }
+                    if (value != null || NULL_OPERATIONS.contains(operation)) {
+                        LOG.fine(format("Adding an %s restriction on attribute %s using value %s.", operation.name(), attribute.getName(), value));
                         if (fetch) {
                             criteria.fetch((SingularAttribute) attribute, JoinType.INNER);
                         }
-                        criteria.eq((SingularAttribute) attribute, value);
+                        switch (operation) {
+                            case EQ:
+                                criteria.eq((SingularAttribute) attribute, value);
+                                break;
+                            case EQ_IGNORE_CASE:
+                                criteria.eqIgnoreCase((SingularAttribute) attribute, value.toString());
+                                break;
+                            case NOT_EQ:
+                                criteria.notEq((SingularAttribute) attribute, value);
+                                break;
+                            case NOT_EQ_IGNORE_CASE:
+                                criteria.notEqIgnoreCase((SingularAttribute) attribute, value.toString());
+                                break;
+                            case GT:
+                                criteria.gt((SingularAttribute) attribute, (Comparable) value);
+                                break;
+                            case GT_OR_EQ:
+                                criteria.gtOrEq((SingularAttribute) attribute, (Comparable) value);
+                                break;
+                            case LT:
+                                criteria.lt((SingularAttribute) attribute, (Comparable) value);
+                                break;
+                            case LT_OR_EQ:
+                                criteria.ltOrEq((SingularAttribute) attribute, (Comparable) value);
+                                break;
+                            case IS_NULL:
+                                criteria.isNull((SingularAttribute) attribute);
+                                break;
+                            case NOT_NULL:
+                                criteria.notNull((SingularAttribute) attribute);
+                                break;
+                            case LIKE:
+                                criteria.like((SingularAttribute) attribute, value.toString());
+                                break;
+                            case LIKE_IGNORE_CASE:
+                                criteria.likeIgnoreCase((SingularAttribute) attribute, value.toString());
+                                break;
+                            case NOT_LIKE:
+                                criteria.notLike((SingularAttribute) attribute, value.toString());
+                                break;
+                            case NOT_LIKE_IGORE_CASE:
+                                criteria.notLikeIgnoreCase((SingularAttribute) attribute, value.toString());
+                                break;
+                            case IS_EMPTY:
+                                criteria.empty((SingularAttribute) attribute);
+                                break;
+                            case NOT_EMPTY:
+                                criteria.notEmpty((SingularAttribute) attribute);
+                                break;
+                        }
                     }
                 } catch (IllegalAccessException e) {
                     LOG.warning(format("Could not get value from field %s of entity %s.", field.getName(), example.getClass().getName()));
@@ -150,28 +207,20 @@ public class ExampleBuilder<T extends PersistenceEntity> {
             }
         }
 
-        private void addInExampleRestriction(final Attribute<T, ?> attribute) {
+
+        private void addPluralRestriction(final Attribute<T, ?> attribute, boolean fetch) {
             final PluralAttribute<T, ?, ?> listAttribute = (PluralAttribute<T, ?, ?>) attribute;
             final Class joinClass = listAttribute.getElementType().getJavaType();
-            final Criteria joinCriteria = new QueryCriteria(joinClass, example.getClass(), exampleBuilder.entityManager, JoinType.LEFT);
-            if (fetch) {
-                criteria.fetch(listAttribute, JoinType.LEFT);
-            }
-            if (listAttribute instanceof ListAttribute) {
-                criteria.join((ListAttribute) listAttribute, joinCriteria);
-            } else if (listAttribute instanceof SetAttribute) {
-                criteria.join((SetAttribute) listAttribute, joinCriteria);
-            } else if (listAttribute instanceof MapAttribute) {
-                criteria.join((MapAttribute) listAttribute, joinCriteria);
-            } else if (listAttribute instanceof CollectionAttribute) {
-                criteria.join((CollectionAttribute) listAttribute, joinCriteria);
-            }
+            final Criteria joinCriteria = new QueryCriteria(joinClass, joinClass, exampleBuilder.entityManager, JoinType.LEFT);
             if (attribute.getJavaMember() instanceof Field) {
                 final Field field = (Field) attribute.getJavaMember();
                 field.setAccessible(true);
                 try {
-                    Object value = field.get(example);
+                    final Object value = field.get(example);
                     if (value != null) {
+                        if (value instanceof Collection && ((Collection) value).isEmpty()) {
+                            return;
+                        }
                         LOG.fine(format("Adding an 'in'restriction on attribute %s using value %s.", attribute.getName(), value));
                         Collection<PersistenceEntity> association = (Collection<PersistenceEntity>) value;
                         SingularAttribute id = exampleBuilder.entityManager.getMetamodel().entity(listAttribute.getElementType().getJavaType()).getId(association.iterator().next().getId().getClass());
@@ -179,7 +228,18 @@ public class ExampleBuilder<T extends PersistenceEntity> {
                         for (PersistenceEntity persistenceEntity : association) {
                             ids.add(persistenceEntity.getId());
                         }
-
+                        if (fetch) {
+                            criteria.fetch(listAttribute, JoinType.LEFT);
+                        }
+                        if (listAttribute instanceof ListAttribute) {
+                            criteria.join((ListAttribute) listAttribute, joinCriteria);
+                        } else if (listAttribute instanceof SetAttribute) {
+                            criteria.join((SetAttribute) listAttribute, joinCriteria);
+                        } else if (listAttribute instanceof MapAttribute) {
+                            criteria.join((MapAttribute) listAttribute, joinCriteria);
+                        } else if (listAttribute instanceof CollectionAttribute) {
+                            criteria.join((CollectionAttribute) listAttribute, joinCriteria);
+                        }
                         joinCriteria.in(id, ids);
                     }
                 } catch (IllegalAccessException e) {
@@ -188,34 +248,13 @@ public class ExampleBuilder<T extends PersistenceEntity> {
             }
         }
 
-        private void addEntityAttributes(Attribute<T, ?>[] usingAttributes) {
-            if (exampleAttributes == null) {
-                exampleAttributes = new HashSet<>();
-            }
-            for (Attribute<T, ?> usingAttribute : usingAttributes) {
-                exampleAttributes.add(usingAttribute);
-            }
-        }
-
-        private Set<Attribute<?, ?>> resolveNonNullEntityAttributes(T example) {
+        private Set<Attribute<?, ?>> resolveNonNullEntityAttributes() {
             Set<Attribute<?, ?>> attributes = (Set<Attribute<?, ?>>) exampleBuilder.entityManager.getMetamodel().entity(example.getClass()).getAttributes();
             if (attributes == null) {
                 attributes = Collections.emptySet();
             }
             return attributes;
         }
-
-        private SingularAttribute<T, String>[] resolveEntitySingularStringAttributes() {
-            Set<SingularAttribute<?, ?>> singularAttributes = (Set<SingularAttribute<?, ?>>) exampleBuilder.entityManager.getMetamodel().entity(example.getClass()).getSingularAttributes();
-            List<SingularAttribute<T, String>> stringAttributes = new ArrayList<>();
-            if (singularAttributes != null && !singularAttributes.isEmpty()) {
-                singularAttributes.stream()
-                        .filter(attr -> attr.getType().getJavaType().isAssignableFrom(String.class))
-                        .forEach(attr -> stringAttributes.add((SingularAttribute<T, String>) attr));
-            }
-            return stringAttributes.toArray(new SingularAttribute[0]);
-        }
-
     }
 
 }

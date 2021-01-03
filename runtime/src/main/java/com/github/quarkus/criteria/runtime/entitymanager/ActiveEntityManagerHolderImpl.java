@@ -2,11 +2,11 @@ package com.github.quarkus.criteria.runtime.entitymanager;
 
 import org.apache.deltaspike.jpa.spi.entitymanager.ActiveEntityManagerHolder;
 
-import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.context.Dependent;
 import javax.inject.Inject;
 import javax.persistence.EntityManager;
 
-@ApplicationScoped
+@Dependent
 public class ActiveEntityManagerHolderImpl implements ActiveEntityManagerHolder {
 
     @Inject

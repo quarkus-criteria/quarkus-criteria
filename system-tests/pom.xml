@@ -56,7 +56,7 @@
             <groupId>com.github.database-rider</groupId>
             <artifactId>rider-cdi</artifactId>
             <version>1.21.0</version>
-            <scope>test</scope>
+            <scope>compile</scope>
             <exclusions>
                 <exclusion>
                     <groupId>stax</groupId>

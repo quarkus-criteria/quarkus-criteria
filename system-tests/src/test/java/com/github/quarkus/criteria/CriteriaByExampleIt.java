@@ -1,11 +1,12 @@
 package com.github.quarkus.criteria;
 
+import com.github.database.rider.cdi.api.DBRider;
+import com.github.database.rider.core.api.dataset.DataSet;
 import com.github.quarkus.criteria.model.*;
+import com.github.quarkus.criteria.runtime.model.ComparisonOperation;
 import com.github.quarkus.criteria.runtime.service.CrudService;
 import com.github.quarkus.criteria.runtime.service.Service;
 import com.github.quarkus.criteria.service.CarService;
-import com.github.database.rider.cdi.api.DBRider;
-import com.github.database.rider.core.api.dataset.DataSet;
 import io.quarkus.test.junit.QuarkusTest;
 import org.apache.deltaspike.data.api.criteria.Criteria;
 import org.assertj.core.api.AssertionsForClassTypes;
@@ -13,9 +14,9 @@ import org.assertj.core.api.AssertionsForInterfaceTypes;
 import org.junit.jupiter.api.Test;
 
 import javax.inject.Inject;
-import java.util.ArrayList;
 import java.util.List;
 
+import static com.github.quarkus.criteria.runtime.model.ComparisonOperation.LT_OR_EQ;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 @DBRider
@@ -29,13 +30,21 @@ public class CriteriaByExampleIt {
     @Service
     CrudService<Car> crudService;
 
+    @Inject
+    @Service
+    CrudService<Brand> brandCrud;
+
+    @Inject
+    @Service
+    CrudService<CarSalesPoint> carSalesPointCrud;
+
     @Test
     @DataSet("cars.yml")
     public void shouldFindCarByExample() {
         Car carExample = new Car().model("Ferrari");
         List<Car> cars = carService
                 .exampleBuilder.of(carExample)
-                .example(Car_.model).build()
+                .usingAttributes(Car_.model).build()
                 .getResultList();
         assertThat(cars).isNotNull()
                 .hasSize(1)
@@ -49,7 +58,7 @@ public class CriteriaByExampleIt {
         Car carExample = new Car().model("Ferrari");
         List<Car> cars = crudService
                 .exampleBuilder.of(carExample)
-                .example(Car_.model)
+                .usingAttributes(Car_.model)
                 .build()
                 .getResultList();
         AssertionsForInterfaceTypes.assertThat(cars).isNotNull().hasSize(1)
@@ -60,7 +69,7 @@ public class CriteriaByExampleIt {
         cars = crudService
                 .exampleBuilder
                 .of(carExample)
-                .exampleLike(Car_.name, Car_.model)
+                .usingAttributes(ComparisonOperation.LIKE_IGNORE_CASE, Car_.name, Car_.model)
                 .build()
                 .getResultList();
 
@@ -69,14 +78,15 @@ public class CriteriaByExampleIt {
                 .contains("porche avenger");
     }
 
+    @Test
     @DataSet("cars.yml")
     public void shouldFindCarsByExampleWithoutPassingAttributes() {
         Car carExample = new Car().model("Ferrari");
         List<Car> cars = crudService
                 .exampleBuilder.of(carExample)
-                .example().build()
+                .usingAttributes().build()
                 .getResultList();
-        AssertionsForInterfaceTypes.assertThat(cars).isNotNull().hasSize(1)
+        assertThat(cars).isNotNull().hasSize(1)
                 .extracting("model")
                 .contains("Ferrari");
     }
@@ -87,56 +97,73 @@ public class CriteriaByExampleIt {
         Car carExample = new Car().model("porche").name("%avenger");
         List<Car> cars = crudService
                 .exampleBuilder.of(carExample)
-                .exampleLike()
+                .usingAttributes(ComparisonOperation.LIKE_IGNORE_CASE)
                 .build()
                 .getResultList();
-        AssertionsForInterfaceTypes.assertThat(cars).isNotNull().hasSize(1)
+        assertThat(cars).isNotNull().hasSize(1)
+                .extracting("name")
+                .contains("porche avenger");
+    }
+
+    @Test
+    @DataSet("cars.yml")
+    public void shouldFindCarsByExampleEqIgnoreCaseWithoutPassingAttributes() {
+        Car carExample = new Car().model("porche");
+        List<Car> cars = crudService
+                .exampleBuilder.of(carExample)
+                .usingAttributes(ComparisonOperation.EQ_IGNORE_CASE)
+                .build()
+                .getResultList();
+        assertThat(cars).isNotNull().hasSize(1)
                 .extracting("name")
                 .contains("porche avenger");
     }
 
     @Test
     @DataSet("cars-full.yml")
-    public void shouldListCarsBySalesPointAddressByExample() {
-        Car carExample = new Car();
-        SalesPoint salesPoint = new SalesPoint(new SalesPointPK(2L, 1L));
-        List<SalesPoint> salesPoints = new ArrayList<>();
-        salesPoints.add(salesPoint);
-        carExample.setSalesPoints(salesPoints);
-        List<Car> carsFound = carService
-                .exampleBuilder.of(carExample)
-                .example(Car_.salesPoints)
+    public void shouldListCarsBySalesPointIdByExample() {
+        SalesPoint salesPoint = new SalesPoint(new SalesPointPK(1L, 4L));
+        CarSalesPoint carSalesPointExample = new CarSalesPoint(new Car(), salesPoint);
+        List<CarSalesPoint> carSalesPointsFound = carSalesPointCrud
+                .exampleBuilder.of(carSalesPointExample)
+                .usingAttributesAndFetch(CarSalesPoint_.salesPoint)
                 .build()
                 .getResultList();
-        AssertionsForInterfaceTypes.assertThat(carsFound).isNotNull().hasSize(1)
+        assertThat(carSalesPointsFound).isNotNull().hasSize(1);
+        assertThat(carSalesPointsFound.get(0).getCar())
                 .extracting("name")
                 .contains("Sentra");
     }
 
     @Test
     @DataSet("cars-full.yml")
-    public void shouldFindCarByMultipleExampleCriteria() {
-        Car carExample = new Car().model("SE");
-        SalesPoint salesPoint = new SalesPoint(new SalesPointPK(2L, 1L));
-        List<SalesPoint> salesPoints = new ArrayList<>();
-        salesPoints.add(salesPoint);
-        carExample.setSalesPoints(salesPoints);
-
+    public void shouldFindCarByBrandAndPriceExampleCriteria() {
+        Car carExample = new Car().model("SE")
+                .price(12.999);
         Brand brand = new Brand(2L);
 
-        carExample.setBrand(brand);//model SE, brand: Nissan, salesPint: Nissan Sales
+        carExample.setBrand(brand);//model SE, price <= 12.999 and brand = Nissan
 
         Criteria<Car, Car> criteriaByExample = carService
                 .exampleBuilder.of(carExample)
-                .example(Car_.model, Car_.brand, Car_.salesPoints)
+                .usingAttributes(Car_.model)
+                .usingAttributes(Car_.brand)
+                .usingAttributes(LT_OR_EQ, Car_.price)
                 .build();
 
-        AssertionsForClassTypes.assertThat(carService.count(criteriaByExample).intValue()).isEqualTo(1);
+        assertThat(carService.count(criteriaByExample).intValue()).isEqualTo(1);
 
-        List<Car> carsFound = criteriaByExample.getResultList();
-        AssertionsForInterfaceTypes.assertThat(carsFound).isNotNull().hasSize(1)
+
+        List<Car> carsFound = carService
+                .exampleBuilder.of(carExample)
+                .usingCriteria(criteriaByExample)
+                .usingAttributesAndFetch(Car_.brand)
+                .build()
+         .getResultList();
+        assertThat(carsFound).isNotNull().hasSize(1)
                 .extracting("name")
                 .contains("Sentra");
+        assertThat(carsFound.get(0).getBrand().getName()).isEqualTo("Nissan");
     }
 
     @Test
@@ -152,13 +179,13 @@ public class CriteriaByExampleIt {
         Criteria<Car, Car> criteriaByExample = carService
                 .exampleBuilder.of(carExample)
                 .usingCriteria(criteria)
-                .example(Car_.model)
+                .usingAttributes(Car_.model)
                 .build();
 
         criteriaByExample = carService
                 .exampleBuilder.of(carExample)
                 .usingCriteria(criteriaByExample)
-                .example(Car_.salesPoints)
+                .usingAttributes(Car_.carSalesPoints)
                 .build();
 
         AssertionsForClassTypes.assertThat(carService.count(criteriaByExample).intValue()).isEqualTo(1);
@@ -171,33 +198,53 @@ public class CriteriaByExampleIt {
 
     @Test
     @DataSet("cars-full.yml")
-    public void shouldFindCarsByExampleFetchingAssociatios() {
-        Car carExample = new Car();
+    public void shouldFindCarsByExampleFetchingAssociations() {
         SalesPoint salesPoint = carService.criteria(SalesPoint.class)
                 .like(SalesPoint_.name, "Nissan%")
                 .getSingleResult();
-        List<SalesPoint> salesPoints = List.of(salesPoint);
-        carExample.setSalesPoints(salesPoints);
-        List<Car> resultList = carService
-                .exampleBuilder.of(carExample)
-                .usingCriteria(carService.criteria()
+        CarSalesPoint carSalesPoint = new CarSalesPoint(new Car(), salesPoint);
+        List<CarSalesPoint> resultList = carSalesPointCrud
+                .exampleBuilder.of(carSalesPoint)
+                .usingCriteria(carSalesPointCrud.criteria()
                         .distinct()
-                        .orderAsc(Car_.id))
-                .usingFetch(true)
-                .example(Car_.salesPoints).build()
+                        .orderAsc(CarSalesPoint_.carSalesPointId))
+                .usingAttributesAndFetch(CarSalesPoint_.salesPoint).build()
                 .getResultList();
 
         assertThat(resultList)
                 .isNotNull()
                 .hasSize(1);
-        Car carFound = resultList.get(0);
+        Car carFound = resultList.get(0).getCar();
         assertThat(carFound)
                 .extracting("id", "name")
                 .contains(2, "Sentra");
-        List<SalesPoint> carSalesPoint = carFound.getSalesPoints();
-        assertThat(carSalesPoint).hasSize(1);
-        assertThat(carSalesPoint.get(0))
+        List<CarSalesPoint> carSalesPointFound = carFound.getCarSalesPoints();
+        assertThat(carSalesPointFound).hasSize(1);
+        assertThat(carSalesPointFound.get(0).getSalesPoint())
                 .extracting("name")
                 .contains("Nissan Sales");
     }
+
+    @Test
+    @DataSet("brands-null-props.yml")
+    public void shouldFindByExampleUsingNullOperation() {
+        List<Brand> brands = brandCrud
+                .exampleBuilder.of(new Brand())
+                .usingAttributes(ComparisonOperation.IS_NULL, Brand_.name)
+                .build()
+                .getResultList();
+        assertThat(brands).isNotNull().hasSize(1)
+                .extracting("id")
+                .contains(2L);
+
+        brands = brandCrud
+                .exampleBuilder.of(new Brand())
+                .usingAttributes(ComparisonOperation.NOT_NULL, Brand_.name)
+                .build()
+                .getResultList();
+        assertThat(brands).isNotNull().hasSize(2)
+                .extracting("id")
+                .contains(1L, 3L);
+    }
+
 }

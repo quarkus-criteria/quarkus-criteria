@@ -1,0 +1,12 @@
+brand:
+  - id: 1
+    name: Ford
+  - id: 2
+  - id: 3
+    name: Tesla
+
+car:
+
+sales_point:
+
+car_sales_point:

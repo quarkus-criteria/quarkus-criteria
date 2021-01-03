@@ -1,5 +1,7 @@
 package com.github.quarkus.criteria;
 
+import com.github.database.rider.core.configuration.DataSetConfig;
+import com.github.database.rider.core.dsl.RiderDSL;
 import com.github.quarkus.criteria.model.*;
 import com.github.quarkus.criteria.runtime.service.CrudService;
 import com.github.quarkus.criteria.runtime.service.Service;
@@ -9,12 +11,14 @@ import io.quarkus.runtime.QuarkusApplication;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.context.control.ActivateRequestContext;
 import javax.inject.Inject;
-import java.util.Collections;
+import javax.sql.DataSource;
 import java.util.List;
-import java.util.stream.IntStream;
 
 @ApplicationScoped
 public class QuarkusCriteriaApp implements QuarkusApplication {
+
+    @Inject
+    DataSource dataSource;
 
     @Inject
     CarService carService;
@@ -31,27 +35,105 @@ public class QuarkusCriteriaApp implements QuarkusApplication {
     @Service
     CrudService<SalesPoint> salesPointCrud;
 
+    @Inject
+    @Service
+    CrudService<CarSalesPoint> carSalesPointCrud;
+
+    /**
+     DataSet:
+
+brand:
+    - id: 1
+    name: Ford
+    - id: 2
+    name: Nissan
+    - id: 3
+    name: Tesla
+
+car:
+    - id: 1
+    name: "Fusion"
+    model: "Titanium"
+    price: 15.850
+    brand_id: 1
+    version: 0
+    - id: 2
+    name: "Sentra"
+    model: "SE"
+    price: 12.999
+    brand_id: 2
+    version: 0
+    - id: 3
+    name: "Model S"
+    model: "S"
+    price: 5.2999
+    brand_id: 3
+    version: 0
+
+sales_point:
+    - id1: 1
+    id2: 2
+    name: Ford Motors
+    address: "Ford motors address"
+    - id1: 1
+    id2: 3
+    name: Ford Motors2
+    address: "Ford motors2 address"
+    - id1: 1
+    id2: 4
+    name: Nissan Sales
+    address: "Nissan address"
+    - id1: 1
+    id2: 5
+    name: Tesla HQ
+    address: "Tesla HQ address"
+
+car_sales_point:
+    - car_id: 1
+    SALESPOINTS_ID1: 1
+    SALESPOINTS_ID2: 2
+    id1: 1
+    id2: 2
+    - car_id: 1
+    SALESPOINTS_ID1: 1
+    SALESPOINTS_ID2: 3
+    id1: 1
+    id2: 3
+    - car_id: 2
+    SALESPOINTS_ID1: 1
+    SALESPOINTS_ID2: 4
+    id1: 1
+    id2: 4
+    - car_id: 3
+    SALESPOINTS_ID1: 1
+    SALESPOINTS_ID2: 5
+    id1: 1
+    id2: 5
+     */
     @Override
     @ActivateRequestContext
     public int run(String... args) {
         try {
-            List<Brand> brands = insertBrands();
-            List<SalesPoint> salesPoints = insertSalesPoints();
-            insertCars(brands, salesPoints);
+            RiderDSL.withConnection(dataSource.getConnection())
+                    .withDataSetConfig(new DataSetConfig("cars.yml"))
+                    .createDataSet();
+
             System.out.println("======================================================================================");
+            System.out.println("Listing cars with: model contains 'tanium' or name = 'Sentra', brand = 'Ford' or 'Nissan' and sales point address = 'Ford motors address' ");
             List<Car> cars = carService.listCars();
-            System.out.println("Printing cars containing '1' in model or '2' in name that are from 'Nissan' or 'Tesla' brand and has a salesPoint which name contains 'Tesla'");
             cars.forEach(System.out::println);
             System.out.println("======================================================================================");
             System.out.println("Selecting car model and price and mapping to a DTO");
             List<CarWithNameAndPrice> carsProjection = carService.carsProjection();
             carsProjection.forEach(System.out::println);
             System.out.println("======================================================================================");
-            System.out.println("Models names containing '4':  " + getAllModelsContaining4());
+            System.out.println("Models names containing 'S':  " + getAllModelsContainingS());
             System.out.println("======================================================================================");
-            List<Car> carsFound = getCarsByExample();
-            System.out.println("Find by cars example: cars that have a sales point named 'Nissan':");
-            carsFound.stream().forEach(System.out::println);
+            List<CarSalesPoint> carsFound = getCarsByExample();
+            System.out.println("Find by cars by example: cars that have a sales point named 'Nissan':");
+            carsFound.stream()
+                    .map(carSalesPoint -> carSalesPoint.getCar())
+                    .forEach(System.out::println);
             return 0;
         } catch (Exception e) {
             e.printStackTrace();
@@ -59,73 +141,27 @@ public class QuarkusCriteriaApp implements QuarkusApplication {
         }
     }
 
-    private List<String> getAllModelsContaining4() {
-         return carCrud.criteria()
+    private List<String> getAllModelsContainingS() {
+        return carCrud.criteria()
                 .select(String.class, carCrud.attribute(Car_.model))
-                .likeIgnoreCase(Car_.model, "%4%")
+                 .like(Car_.model, "%S%")
                 .getResultList();
     }
 
-    private List<Car> getCarsByExample() {
-        Car carExample = new Car();
+    private List<CarSalesPoint> getCarsByExample() {
         SalesPoint salesPoint = salesPointCrud.criteria()
-                .eq(SalesPoint_.name, "Nissan")
+                .likeIgnoreCase(SalesPoint_.name, "%Nissan%")
                 .getSingleResult();
-        List<SalesPoint> salesPoints = List.of(salesPoint);
-        carExample.setSalesPoints(salesPoints);
-        return carService
-                .exampleBuilder.of(carExample)
-                .usingCriteria(carService.criteria()
+        CarSalesPoint example = new CarSalesPoint(new Car(), salesPoint);
+        return carSalesPointCrud
+                .exampleBuilder.of(example)
+                .usingCriteria(carSalesPointCrud.criteria()
                         .distinct()
-                        .orderAsc(Car_.id))
-                .usingFetch(true)
-                .example(Car_.salesPoints).build()
+                        .orderAsc(CarSalesPoint_.carSalesPointId))
+                .usingAttributesAndFetch(CarSalesPoint_.salesPoint)
+                        .build()
                 .getResultList();
     }
-
-    private void insertCars(List<Brand> brands, List<SalesPoint> salesPoints) {
-        System.out.println("Inserting new cars...");
-        IntStream.rangeClosed(1, 50)
-                .forEach(i -> insertCar(i, brands, salesPoints));
-    }
-
-    private List<Brand> insertBrands() {
-        List.of(new Brand().setName("Nissan"),
-                new Brand().setName("Ford"),
-                new Brand().setName("Tesla"))
-                .forEach(brandCrud::insert);
-        List<Brand> brandsCreated = brandCrud.criteria().getResultList();
-        System.out.println("Brands created: " + brandsCreated);
-        return brandsCreated;
-    }
-
-    private List<SalesPoint> insertSalesPoints() {
-        List.of(new SalesPoint(new SalesPointPK(1L, 1L)).setName("Nissan"),
-                new SalesPoint(new SalesPointPK(1L, 2L)).setName("Ford Motors"),
-                new SalesPoint(new SalesPointPK(1L, 3L)).setName("Tesla HQ"))
-                .forEach(salesPointCrud::insert);
-        List<SalesPoint> salesPointsCreated = salesPointCrud.criteria().getResultList();
-        System.out.println("SalesPoints created: " + salesPointsCreated);
-        return salesPointsCreated;
-    }
-
-    private void insertCar(int index, List<Brand> brands, List<SalesPoint> salesPoints) {
-        Collections.shuffle(brands);
-        Collections.shuffle(salesPoints);
-        List<SalesPoint> carSalesPoints = List.of(salesPoints.get(0), salesPoints.get(1));
-        carCrud.insert(new Car().model("model " + index)
-                .name("name" + index)
-                .price(Double.valueOf(index))
-                .setBrand(brands.get(0))
-                .setSalesPoints(carSalesPoints));
-    }
-
-   /* Car carExample = new Car();
-    SalesPoint salesPoint = new SalesPoint(new SalesPointPK(2L, 1L));
-    List<SalesPoint> salesPoints = new ArrayList<>();
-        salesPoints.add(salesPoint);
-        carExample.setSalesPoints(salesPoints);
-    List<Car> carsFound = carService.example(carExample, Car_.salesPoints).getResultList();*/
 
 
 }

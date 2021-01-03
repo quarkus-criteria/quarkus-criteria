@@ -362,13 +362,13 @@ public class CrudServiceIt {
     @DataSet("cars-full.yml")
     public void shouldCountByCompositeKey() {
         Long count = salesPointService.count();
-        assertThat(count).isNotNull().isEqualTo(3);
+        assertThat(count).isNotNull().isEqualTo(4);
     }
 
     @Test
     @DataSet("cars-full.yml")
     public void shouldListCarsBySalesPoint() {
-        List<Car> carsFound = carService.findBySalesPoint(new SalesPoint(new SalesPointPK(2L, 1L)));
+        List<Car> carsFound = carService.findBySalesPoint(new SalesPoint(new SalesPointPK(1L, 4L)));
         AssertionsForInterfaceTypes.assertThat(carsFound).isNotNull().hasSize(1)
                 .extracting("name")
                 .contains("Sentra");

@@ -63,15 +63,17 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
     }
 
     @Transactional
-    public void insert(T entity) {
+    public T insert(T entity) {
         if (entity == null) {
             throw new RuntimeException("Record cannot be null");
         }
         beforeAll(entity);
         beforeInsert(entity);
         entityManager.persist(entity);
+        entityManager.flush();
         afterInsert(entity);
         afterAll(entity);
+        return entity;
     }
 
     @Transactional
@@ -168,7 +170,6 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
         } else {
             entity = update(entity);
         }
-
         return entity;
     }
 
