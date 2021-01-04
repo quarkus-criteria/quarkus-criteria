@@ -34,6 +34,8 @@
     <properties>
         <quarkus.version>1.10.5.Final</quarkus.version>
         <deltaspike.version>1.9.4</deltaspike.version>
+        <jacoco.version>0.8.6</jacoco.version>
+        <surefire.version>2.22.0</surefire.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -42,7 +44,9 @@
     <modules>
         <module>deployment</module>
         <module>runtime</module>
-        <module>system-tests</module>
+        <module>it-tests</module>
+        <module>examples</module>
+        <module>coverage-report</module>
     </modules>
 
     <dependencyManagement>
@@ -95,6 +99,60 @@
                         <configuration>
                             <skipTests>true</skipTests>
                         </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+        <profile>
+            <id>coverage</id>
+            <build>
+                <plugins>
+                    <!-- Jacoco -->
+                    <plugin>
+                        <groupId>org.jacoco</groupId>
+                        <artifactId>jacoco-maven-plugin</artifactId>
+                        <version>${jacoco.version}</version>
+                        <executions>
+                            <execution>
+                                <id>default-prepare-agent</id>
+                                <phase>test-compile</phase>
+                                <goals>
+                                    <goal>prepare-agent</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                        <configuration>
+                                <!-- basically excludes classes from examples projects-->
+                                <excludes>
+                                    <exclude>**/*CarService.*</exclude>
+                                    <exclude>**/*Car.*</exclude>
+                                    <exclude>**/*CarCriteria.*</exclude>
+                                    <exclude>**/*Brand*</exclude>
+                                    <exclude>**/*Sales*</exclude>
+                                    <exclude>**/*SalesPoint*</exclude>
+                                    <exclude>**/*App*</exclude>
+                                    <exclude>**/*CarWithNameAndPrice*</exclude>
+                                </excludes>
+                        </configuration>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.eluder.coveralls</groupId>
+                        <artifactId>coveralls-maven-plugin</artifactId>
+                        <version>4.3.0</version>
+                        <configuration>
+                            <jacocoReports>coverage-report/target/site/jacoco-aggregate/jacoco.xml</jacocoReports>
+                            <repoToken>${COVERAGE_TOKEN}</repoToken>
+                            <sourceDirectories>
+                                <sourceDirectory>it-tests/target/generated-sources/apt</sourceDirectory>
+                            </sourceDirectories>
+                        </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>jakarta.xml.bind</groupId>
+                                <artifactId>jakarta.xml.bind-api</artifactId>
+                                <version>2.3.2</version>
+                            </dependency>
+                        </dependencies>
                     </plugin>
                 </plugins>
             </build>
