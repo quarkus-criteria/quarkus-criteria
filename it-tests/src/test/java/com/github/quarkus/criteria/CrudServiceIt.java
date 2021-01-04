@@ -11,16 +11,14 @@ import com.github.quarkus.criteria.runtime.service.CrudService;
 import com.github.quarkus.criteria.runtime.service.Service;
 import com.github.quarkus.criteria.service.CarService;
 import io.quarkus.test.junit.QuarkusTest;
-import org.assertj.core.api.AssertionsForInterfaceTypes;
 import org.junit.jupiter.api.Test;
-
 import javax.inject.Inject;
 import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 
-import static org.assertj.core.api.AssertionsForClassTypes.assertThat;
+import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.Assert.*;
 
 @DataSet(cleanBefore = true)
@@ -68,7 +66,7 @@ public class CrudServiceIt {
         Car mustang = new Car(-2);
         List<Car> carsToFind = Arrays.asList(ferrari, mustang);
         List<Car> cars = carService.findCarsInList(carsToFind);
-        AssertionsForInterfaceTypes.assertThat(cars).isNotNull()
+        assertThat(cars).isNotNull()
                 .hasSize(2)
                 .extracting("id")
                 .contains(-1, -2);
@@ -223,7 +221,7 @@ public class CrudServiceIt {
     @DataSet("cars.yml")
     public void shouldListCarsModel() {
         List<Car> cars = carService.listByModel("%porche%");
-        AssertionsForInterfaceTypes.assertThat(cars).isNotNull().hasSize(2);
+        assertThat(cars).isNotNull().hasSize(2);
     }
 
     @Test
@@ -256,7 +254,7 @@ public class CrudServiceIt {
                 .setSortField("model")
                 .setSort(Sort.DESCENDING);
         List<Car> cars = carService.paginate(carFilter);
-        AssertionsForInterfaceTypes.assertThat(cars).isNotNull().hasSize(4);
+        assertThat(cars).isNotNull().hasSize(4);
         assertTrue(cars.get(0).getModel().equals("Porche274"));
         assertTrue(cars.get(3).getModel().equals("Ferrari"));
     }
@@ -271,7 +269,7 @@ public class CrudServiceIt {
                 .addMultSort(Sort.ASCENDING, "price");
 
         List<Car> cars = carService.paginate(carFilter);
-        AssertionsForInterfaceTypes.assertThat(cars).isNotNull().hasSize(4);
+        assertThat(cars).isNotNull().hasSize(4);
         assertTrue(cars.get(0).getModel().equals("Porche"));
         assertTrue(cars.get(1).getModel().equals("Porche"));
         assertTrue(cars.get(0).getName().equals("Avenger"));
@@ -290,7 +288,7 @@ public class CrudServiceIt {
                 setFirst(0).setPageSize(4)
                 .setEntity(car);
         List<Car> cars = carService.paginate(carFilter);
-        AssertionsForInterfaceTypes.assertThat(cars).isNotNull().hasSize(1)
+        assertThat(cars).isNotNull().hasSize(1)
                 .extracting("model").contains("Ferrari");
     }
 
@@ -300,7 +298,7 @@ public class CrudServiceIt {
         Car carExample = new Car().setPrice(12999.0);
         Filter<Car> carFilter = new Filter<Car>().setFirst(0).setPageSize(2).setEntity(carExample);
         List<Car> cars = carService.paginate(carFilter);
-        AssertionsForInterfaceTypes.assertThat(cars).isNotNull().hasSize(1)
+        assertThat(cars).isNotNull().hasSize(1)
                 .extracting("model").contains("Mustang");
     }
 
@@ -311,7 +309,7 @@ public class CrudServiceIt {
                 .setPageSize(2)
                 .addParam("id", -1);
         List<Car> cars = carService.paginate(carFilter);
-        AssertionsForInterfaceTypes.assertThat(cars).isNotNull().hasSize(1)
+        assertThat(cars).isNotNull().hasSize(1)
                 .extracting("id").contains(-1);
     }
 
@@ -322,7 +320,7 @@ public class CrudServiceIt {
                 .between(Car_.price, 1000D, 2450.9D)
                 .orderAsc(Car_.price).getResultList();
         //ferrari and porche
-        AssertionsForInterfaceTypes.assertThat(cars).isNotNull()
+        assertThat(cars).isNotNull()
                 .hasSize(2).extracting("model")
                 .contains("Porche", "Ferrari");
     }
@@ -332,7 +330,7 @@ public class CrudServiceIt {
     public void shouldGetCarModels() {
         List<String> models = carService.getModels("po");
         //porche and Porche274
-        AssertionsForInterfaceTypes.assertThat(models).isNotNull().hasSize(2)
+        assertThat(models).isNotNull().hasSize(2)
                 .contains("Porche", "Porche274");
     }
 
@@ -377,7 +375,7 @@ public class CrudServiceIt {
                 .getSingleResult();
 
         List<Car> carsFound = carService.findByBrand(tesla);
-        AssertionsForInterfaceTypes.assertThat(carsFound).isNotNull().hasSize(2)
+        assertThat(carsFound).isNotNull().hasSize(2)
                 .extracting("name")
                 .contains("Model S", "Model X");
 
@@ -387,7 +385,7 @@ public class CrudServiceIt {
                 .in(Car_.id, brandCrud.toListOfIds(carsFound, new Integer[0])))
                 .getResultList();
 
-        AssertionsForInterfaceTypes.assertThat(brands).isNotNull().hasSize(1)
+        assertThat(brands).isNotNull().hasSize(1)
                 .extracting("name")
                 .contains("Tesla");
     }
@@ -396,7 +394,7 @@ public class CrudServiceIt {
     @DataSet("cars-full.yml")
     public void shouldListCarsBySalesPoint() {
         List<Car> carsFound = carService.findBySalesPoint(new SalesPoint(new SalesPointPK(1L, 4L)));
-        AssertionsForInterfaceTypes.assertThat(carsFound).isNotNull().hasSize(1)
+        assertThat(carsFound).isNotNull().hasSize(1)
                 .extracting("name")
                 .contains("Sentra");
     }
@@ -405,7 +403,7 @@ public class CrudServiceIt {
     @DataSet("cars-full.yml")
     public void shouldListCarsBySalesPointAddress() {
         List<Car> carsFound = carService.findBySalesPointAddress("Nissan address");
-        AssertionsForInterfaceTypes.assertThat(carsFound).isNotNull().hasSize(1)
+        assertThat(carsFound).isNotNull().hasSize(1)
                 .extracting("name")
                 .contains("Sentra");
     }
@@ -414,7 +412,7 @@ public class CrudServiceIt {
     @DataSet(value = "sales-points.yml", cleanBefore = true)
     public void shouldListSalesPointsUsingCarService() {
         List<SalesPoint> listSalesPointsByName = carService.listSalesPointsByName("Motors");
-        AssertionsForInterfaceTypes.assertThat(listSalesPointsByName).isNotNull().hasSize(2);
+        assertThat(listSalesPointsByName).isNotNull().hasSize(2);
     }
 
     @Test

@@ -10,7 +10,6 @@ import com.github.quarkus.criteria.service.CarService;
 import io.quarkus.test.junit.QuarkusTest;
 import org.apache.deltaspike.data.api.criteria.Criteria;
 import org.assertj.core.api.AssertionsForClassTypes;
-import org.assertj.core.api.AssertionsForInterfaceTypes;
 import org.junit.jupiter.api.Test;
 
 import javax.inject.Inject;
@@ -61,7 +60,7 @@ public class CriteriaByExampleIt {
                 .usingAttributes(Car_.model)
                 .build()
                 .getResultList();
-        AssertionsForInterfaceTypes.assertThat(cars).isNotNull().hasSize(1)
+        assertThat(cars).isNotNull().hasSize(1)
                 .extracting("model")
                 .contains("Ferrari");
 
@@ -73,7 +72,7 @@ public class CriteriaByExampleIt {
                 .build()
                 .getResultList();
 
-        AssertionsForInterfaceTypes.assertThat(cars).isNotNull().hasSize(1)
+        assertThat(cars).isNotNull().hasSize(1)
                 .extracting("name")
                 .contains("porche avenger");
     }
@@ -191,7 +190,7 @@ public class CriteriaByExampleIt {
         AssertionsForClassTypes.assertThat(carService.count(criteriaByExample).intValue()).isEqualTo(1);
 
         List<Car> carsFound = criteriaByExample.getResultList();
-        AssertionsForInterfaceTypes.assertThat(carsFound).isNotNull().hasSize(1)
+        assertThat(carsFound).isNotNull().hasSize(1)
                 .extracting("name")
                 .contains("Sentra");
     }
@@ -258,7 +257,7 @@ public class CriteriaByExampleIt {
                 .of(new Car().setBrand(tesla))
                 .usingAttributesAndFetch()
                 .build().getResultList();
-        AssertionsForInterfaceTypes.assertThat(carsFound).isNotNull().hasSize(2)
+        assertThat(carsFound).isNotNull().hasSize(2)
                 .extracting("name")
                 .contains("Model S", "Model X");
 
@@ -269,7 +268,7 @@ public class CriteriaByExampleIt {
                 .build().distinct()
                 .getResultList();
 
-        AssertionsForInterfaceTypes.assertThat(brands).isNotNull().hasSize(1)
+        assertThat(brands).isNotNull().hasSize(1)
                 .extracting("name")
                 .contains("Tesla");
     }
