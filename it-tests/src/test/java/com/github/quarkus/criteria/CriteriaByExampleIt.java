@@ -41,7 +41,7 @@ public class CriteriaByExampleIt {
     @Test
     @DataSet("cars.yml")
     public void shouldFindCarByExample() {
-        Car carExample = new Car().model("Ferrari");
+        Car carExample = new Car().setModel("Ferrari");
         List<Car> cars = carService
                 .exampleBuilder.of(carExample)
                 .usingAttributes(Car_.model).build()
@@ -55,7 +55,7 @@ public class CriteriaByExampleIt {
     @Test
     @DataSet("cars.yml")
     public void shouldFindCarsByExample() {
-        Car carExample = new Car().model("Ferrari");
+        Car carExample = new Car().setModel("Ferrari");
         List<Car> cars = crudService
                 .exampleBuilder.of(carExample)
                 .usingAttributes(Car_.model)
@@ -65,7 +65,7 @@ public class CriteriaByExampleIt {
                 .extracting("model")
                 .contains("Ferrari");
 
-        carExample = new Car().model("porche").name("%avenger");
+        carExample = new Car().setModel("porche").setName("%avenger");
         cars = crudService
                 .exampleBuilder
                 .of(carExample)
@@ -81,7 +81,7 @@ public class CriteriaByExampleIt {
     @Test
     @DataSet("cars.yml")
     public void shouldFindCarsByExampleWithoutPassingAttributes() {
-        Car carExample = new Car().model("Ferrari");
+        Car carExample = new Car().setModel("Ferrari");
         List<Car> cars = crudService
                 .exampleBuilder.of(carExample)
                 .usingAttributes().build()
@@ -94,7 +94,7 @@ public class CriteriaByExampleIt {
     @Test
     @DataSet("cars.yml")
     public void shouldFindCarsByExampleLikeWithoutPassingAttributes() {
-        Car carExample = new Car().model("porche").name("%avenger");
+        Car carExample = new Car().setModel("porche").setName("%avenger");
         List<Car> cars = crudService
                 .exampleBuilder.of(carExample)
                 .usingAttributes(ComparisonOperation.LIKE_IGNORE_CASE)
@@ -108,7 +108,7 @@ public class CriteriaByExampleIt {
     @Test
     @DataSet("cars.yml")
     public void shouldFindCarsByExampleEqIgnoreCaseWithoutPassingAttributes() {
-        Car carExample = new Car().model("porche");
+        Car carExample = new Car().setModel("porche");
         List<Car> cars = crudService
                 .exampleBuilder.of(carExample)
                 .usingAttributes(ComparisonOperation.EQ_IGNORE_CASE)
@@ -138,8 +138,8 @@ public class CriteriaByExampleIt {
     @Test
     @DataSet("cars-full.yml")
     public void shouldFindCarByBrandAndPriceExampleCriteria() {
-        Car carExample = new Car().model("SE")
-                .price(12.999);
+        Car carExample = new Car().setModel("SE")
+                .setPrice(12.999);
         Brand brand = new Brand(2L);
 
         carExample.setBrand(brand);//model SE, price <= 12.999 and brand = Nissan
@@ -174,7 +174,7 @@ public class CriteriaByExampleIt {
                         .eq(Brand_.name, "Nissan")
                 ); //cars with brand nissan
 
-        Car carExample = new Car().model("SE");
+        Car carExample = new Car().setModel("SE");
         //will add a restriction by car 'model' using example criteria
         Criteria<Car, Car> criteriaByExample = carService
                 .exampleBuilder.of(carExample)
@@ -247,4 +247,30 @@ public class CriteriaByExampleIt {
                 .contains(1L, 3L);
     }
 
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldListCarsOfSpecificBrandByExample() {
+        Brand tesla = brandCrud.criteria()
+                .eq(Brand_.name, "Tesla")
+                .getSingleResult();
+
+        List<Car> carsFound = carService.exampleBuilder
+                .of(new Car().setBrand(tesla))
+                .usingAttributesAndFetch()
+                .build().getResultList();
+        AssertionsForInterfaceTypes.assertThat(carsFound).isNotNull().hasSize(2)
+                .extracting("name")
+                .contains("Model S", "Model X");
+
+        tesla.setCars(carsFound);
+        List<Brand> brands = brandCrud.exampleBuilder
+                .of(tesla)
+                .usingAttributesAndFetch(Brand_.cars)
+                .build().distinct()
+                .getResultList();
+
+        AssertionsForInterfaceTypes.assertThat(brands).isNotNull().hasSize(1)
+                .extracting("name")
+                .contains("Tesla");
+    }
 }

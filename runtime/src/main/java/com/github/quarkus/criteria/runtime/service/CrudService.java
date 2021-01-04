@@ -268,7 +268,7 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
      * @param idsType  the type of the pk list, e.g new Long[0]
      * @return primitive array containing entities pks.
      */
-    protected <ID extends Serializable> ID[] toListOfIds(Collection<? extends PersistenceEntity> entities, ID[] idsType) {
+    public  <ID extends Serializable> ID[] toListOfIds(Collection<? extends PersistenceEntity> entities, ID[] idsType) {
         Set<ID> ids = new HashSet<>();
         for (PersistenceEntity entity : entities) {
             ids.add(entity.getId());

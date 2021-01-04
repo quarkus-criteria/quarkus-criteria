@@ -34,7 +34,7 @@ public class Car extends BaseEntity {
     @Column(name = "price")
     private Double price;
 
-    @OneToOne
+    @ManyToOne
     private Brand brand;
 
     @OneToMany(mappedBy = "car", orphanRemoval = true)
@@ -55,7 +55,7 @@ public class Car extends BaseEntity {
         return model;
     }
 
-    public Double getPrice() {
+    public Double setPrice() {
         return price;
     }
 
@@ -68,15 +68,11 @@ public class Car extends BaseEntity {
         return name;
     }
 
-    public void setModel(String model) {
+    public void getModel(String model) {
         this.model = model;
     }
 
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public void setPrice(Double price) {
+    public void getPrice(Double price) {
         this.price = price;
     }
 
@@ -88,18 +84,18 @@ public class Car extends BaseEntity {
         this.version = version;
     }
 
-    public Car model(String model) {
+    public Car setName(String name) {
+        this.name = name;
+        return this;
+    }
+
+    public Car setModel(String model) {
         this.model = model;
         return this;
     }
 
-    public Car price(Double price) {
+    public Car setPrice(Double price) {
         this.price = price;
-        return this;
-    }
-
-    public Car name(String name) {
-        this.name = name;
         return this;
     }
 

@@ -207,7 +207,6 @@ public class ExampleBuilder<T extends PersistenceEntity> {
             }
         }
 
-
         private void addPluralRestriction(final Attribute<T, ?> attribute, boolean fetch) {
             final PluralAttribute<T, ?, ?> listAttribute = (PluralAttribute<T, ?, ?>) attribute;
             final Class joinClass = listAttribute.getElementType().getJavaType();

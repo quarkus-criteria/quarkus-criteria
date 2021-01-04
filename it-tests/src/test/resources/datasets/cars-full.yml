@@ -25,6 +25,12 @@ car:
     price: 5.2999
     brand_id: 3
     version: 0
+  - id: 4
+    name: "Model X"
+    model: "X"
+    price: 9.999
+    brand_id: 3
+    version: 0
 
 sales_point:
   - id1: 1

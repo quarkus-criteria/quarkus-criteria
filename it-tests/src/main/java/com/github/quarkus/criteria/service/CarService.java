@@ -53,8 +53,8 @@ public class CarService extends CrudService<Car> implements Serializable {
             if (filterEntity.hasModel()) {
                 criteria.likeIgnoreCase(Car_.model, "%" + filterEntity.getModel());
             }
-            if (filterEntity.getPrice() != null) {
-                criteria.eq(Car_.price, filterEntity.getPrice());
+            if (filterEntity.setPrice() != null) {
+                criteria.eq(Car_.price, filterEntity.setPrice());
             }
             if (filterEntity.hasName()) {
                 criteria.likeIgnoreCase(Car_.name, "%" + filterEntity.getName() + "%");
@@ -79,7 +79,7 @@ public class CarService extends CrudService<Car> implements Serializable {
             throw new RuntimeException("Car name cannot be empty");
         }
 
-        if (car.getPrice() == null) {
+        if (car.setPrice() == null) {
             throw new RuntimeException("Car price cannot be empty");
         }
 
@@ -169,4 +169,9 @@ public class CarService extends CrudService<Car> implements Serializable {
     }
 
 
+    public List<Car> findByBrand(Brand brand) {
+        return criteria()
+             .eq(Car_.brand, brand)
+             .getResultList();
+    }
 }

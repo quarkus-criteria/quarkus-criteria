@@ -36,11 +36,15 @@ public class CrudServiceIt {
 
     @Inject
     @Service
-    CrudService<Car> crudService;
+    CrudService<Car> carCrud;
 
     @Inject
     @Service
-    CrudService<SalesPoint> salesPointService;
+    CrudService<SalesPoint> salesPointCrud;
+
+    @Inject
+    @Service
+    CrudService<Brand> brandCrud;
 
     @Test
     @DataSet("cars.yml")
@@ -73,7 +77,7 @@ public class CrudServiceIt {
     @Test
     public void shouldNotInsertCarWithoutName() {
         long countBefore = carService.count();
-        Car newCar = new Car().model("My Car").price(1d);
+        Car newCar = new Car().setModel("My Car").setPrice(1d);
         try {
             carService.insert(newCar);
         } catch (RuntimeException e) {
@@ -84,8 +88,8 @@ public class CrudServiceIt {
 
     @Test
     public void shouldNotInsertCarWithoutModel() {
-        Car newCar = new Car().name("My Car")
-                .price(1d);
+        Car newCar = new Car().setName("My Car")
+                .setPrice(1d);
         try {
             carService.insert(newCar);
         } catch (RuntimeException e) {
@@ -96,9 +100,9 @@ public class CrudServiceIt {
     @Test
     @DataSet("cars.yml")
     public void shouldNotInsertCarWithDuplicateName() {
-        Car newCar = new Car().model("My Car")
-                .name("ferrari spider")
-                .price(1d);
+        Car newCar = new Car().setModel("My Car")
+                .setName("ferrari spider")
+                .setPrice(1d);
         try {
             carService.insert(newCar);
         } catch (RuntimeException e) {
@@ -110,8 +114,8 @@ public class CrudServiceIt {
     public void shouldInsertCar() {
         long countBefore = carService.count();
         assertEquals(countBefore, 0);
-        Car newCar = new Car().model("My Car")
-                .name("car name").price(1d);
+        Car newCar = new Car().setModel("My Car")
+                .setName("car name").setPrice(1d);
         carService.insert(newCar);
         assertEquals(new Long(countBefore + 1), carService.count());
     }
@@ -146,7 +150,7 @@ public class CrudServiceIt {
     @DataSet("cars.yml")
     public void shouldUpdateCar() {
         Car car = getCar();
-        car.name("updated name");
+        car.setName("updated name");
         carService.update(car);
         Car carFound = carService.criteria().eq(Car_.id, -1).getSingleResult();
         assertThat(carFound).isNotNull().extracting("name")
@@ -157,7 +161,7 @@ public class CrudServiceIt {
     @DataSet("cars.yml")
     public void shouldUpdateCarNotAttachedToPersistenceContext() {
         Car car = new Car(-1);
-        car.model("updated model").name("updated name").price(1.2);
+        car.setModel("updated model").setName("updated name").setPrice(1.2);
         Car updatedCar = carService.update(car);
         assertThat(updatedCar).isNotNull().extracting("id")
                 .contains(1);//a new record will be created because entity was not managed
@@ -182,7 +186,7 @@ public class CrudServiceIt {
     @Test
     public void shouldNotUpdateCarWithoutId() {
         Car car = new Car();
-        car.model("updated model").name("updated name").price(1.2);
+        car.setModel("updated model").setName("updated name").setPrice(1.2);
         try {
             carService.update(car);
         } catch (RuntimeException e) {
@@ -203,8 +207,8 @@ public class CrudServiceIt {
                 .contains("Ferrari update");
 
         Car newCar = new Car();
-        newCar.model("new model").price(1111.1)
-                .name("new name");
+        newCar.setModel("new model").setPrice(1111.1)
+                .setName("new name");
         newCar = carService.saveOrUpdate(newCar);
 
         assertThat(newCar).isNotNull();
@@ -281,7 +285,7 @@ public class CrudServiceIt {
     @Test
     @DataSet("cars.yml")
     public void shouldPaginateCarsByModel() {
-        Car car = new Car().model("Ferrari");
+        Car car = new Car().setModel("Ferrari");
         Filter<Car> carFilter = new Filter<Car>().
                 setFirst(0).setPageSize(4)
                 .setEntity(car);
@@ -293,7 +297,7 @@ public class CrudServiceIt {
     @Test
     @DataSet("cars.yml")
     public void shouldPaginateCarsByPrice() {
-        Car carExample = new Car().price(12999.0);
+        Car carExample = new Car().setPrice(12999.0);
         Filter<Car> carFilter = new Filter<Car>().setFirst(0).setPageSize(2).setEntity(carExample);
         List<Car> cars = carService.paginate(carFilter);
         AssertionsForInterfaceTypes.assertThat(cars).isNotNull().hasSize(1)
@@ -335,8 +339,8 @@ public class CrudServiceIt {
     @Test
     @DataSet("cars.yml")
     public void shoulListCarsUsingCrudUtility() {
-        assertThat(new Long(4)).isEqualTo(crudService.count());
-        long count = crudService.count(crudService.criteria()
+        assertThat(new Long(4)).isEqualTo(carCrud.count());
+        long count = carCrud.count(carCrud.criteria()
                 .likeIgnoreCase(Car_.model, "%porche%")
                 .gtOrEq(Car_.price, 10000D));
         assertEquals(1, count);
@@ -346,14 +350,14 @@ public class CrudServiceIt {
     @Test
     @DataSet("cars.yml")
     public void shoulGetTotalPriceByModel() {
-        assertEquals((Double) 20380.53, carService.getTotalPriceByModel(new Car().model("%porche%")));
+        assertEquals((Double) 20380.53, carService.getTotalPriceByModel(new Car().setModel("%porche%")));
     }
 
     @Test
     @DataSet("cars-full.yml")
     public void shouldFindByCompositeKey() {
         SalesPointPK pk = new SalesPointPK(1L, 3L);
-        SalesPoint salesPoint = salesPointService.findById(pk);
+        SalesPoint salesPoint = salesPointCrud.findById(pk);
         assertThat(salesPoint).isNotNull().extracting("name")
                 .contains("Ford Motors2");
     }
@@ -361,8 +365,31 @@ public class CrudServiceIt {
     @Test
     @DataSet("cars-full.yml")
     public void shouldCountByCompositeKey() {
-        Long count = salesPointService.count();
+        Long count = salesPointCrud.count();
         assertThat(count).isNotNull().isEqualTo(4);
+    }
+
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldListCarsOfSpecificBrand() {
+        Brand tesla = brandCrud.criteria()
+                .eq(Brand_.name, "Tesla")
+                .getSingleResult();
+
+        List<Car> carsFound = carService.findByBrand(tesla);
+        AssertionsForInterfaceTypes.assertThat(carsFound).isNotNull().hasSize(2)
+                .extracting("name")
+                .contains("Model S", "Model X");
+
+        List<Brand> brands = brandCrud.criteria()
+                .distinct()
+                .join(Brand_.cars, brandCrud.where(Car.class)
+                .in(Car_.id, brandCrud.toListOfIds(carsFound, new Integer[0])))
+                .getResultList();
+
+        AssertionsForInterfaceTypes.assertThat(brands).isNotNull().hasSize(1)
+                .extracting("name")
+                .contains("Tesla");
     }
 
     @Test
@@ -396,42 +423,42 @@ public class CrudServiceIt {
         RiderDSL.DBUnitConfigDSL riderDSL = RiderDSL.withConnection(dataSource.getConnection())
                 .withDataSetConfig(dataSetConfig);
         riderDSL.createDataSet();
-        assertThat(crudService.count()).isEqualTo(10L);
+        assertThat(carCrud.count()).isEqualTo(10L);
         //batch equal to entities size
-        int deleted = crudService.removeBatch(crudService.criteria().getResultList(), 10);
+        int deleted = carCrud.removeBatch(carCrud.criteria().getResultList(), 10);
         assertThat(deleted).isEqualTo(10);
-        assertThat(crudService.count()).isEqualTo(0L);
+        assertThat(carCrud.count()).isEqualTo(0L);
         riderDSL.createDataSet();
-        assertThat(crudService.count()).isEqualTo(10L);
+        assertThat(carCrud.count()).isEqualTo(10L);
         //batch < entities size
-        deleted = crudService.removeBatch(crudService.criteria().getResultList(), 9);
+        deleted = carCrud.removeBatch(carCrud.criteria().getResultList(), 9);
         assertThat(deleted).isEqualTo(10);
-        assertThat(crudService.count()).isEqualTo(0L);
+        assertThat(carCrud.count()).isEqualTo(0L);
         riderDSL.createDataSet();
         // batch > entities size
-        deleted = crudService.removeBatch(crudService.criteria().getResultList(), 11);
+        deleted = carCrud.removeBatch(carCrud.criteria().getResultList(), 11);
         assertThat(deleted).isEqualTo(10);
-        assertThat(crudService.count()).isEqualTo(0L);
+        assertThat(carCrud.count()).isEqualTo(0L);
         riderDSL.createDataSet();
         // invalid batch size, use default batch size
-        deleted = crudService.removeBatch(crudService.criteria().getResultList(), 0);
+        deleted = carCrud.removeBatch(carCrud.criteria().getResultList(), 0);
         assertThat(deleted).isEqualTo(10);
-        assertThat(crudService.count()).isEqualTo(0L);
+        assertThat(carCrud.count()).isEqualTo(0L);
         riderDSL.createDataSet();
         // small batch size
-        deleted = crudService.removeBatch(crudService.criteria().getResultList(), 1);
+        deleted = carCrud.removeBatch(carCrud.criteria().getResultList(), 1);
         assertThat(deleted).isEqualTo(10);
-        assertThat(crudService.count()).isEqualTo(0L);
+        assertThat(carCrud.count()).isEqualTo(0L);
         riderDSL.createDataSet();
         // small batch size
-        deleted = crudService.removeBatch(crudService.criteria().getResultList(), 3);
+        deleted = carCrud.removeBatch(carCrud.criteria().getResultList(), 3);
         assertThat(deleted).isEqualTo(10);
-        assertThat(crudService.count()).isEqualTo(0L);
+        assertThat(carCrud.count()).isEqualTo(0L);
         riderDSL.createDataSet();
         // 'prime' batch size
-        deleted = crudService.removeBatch(crudService.criteria().getResultList(), 7);
+        deleted = carCrud.removeBatch(carCrud.criteria().getResultList(), 7);
         assertThat(deleted).isEqualTo(10);
-        assertThat(crudService.count()).isEqualTo(0L);
+        assertThat(carCrud.count()).isEqualTo(0L);
     }
 
     private Car getCar() {
