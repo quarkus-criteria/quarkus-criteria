@@ -13,6 +13,7 @@ import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.Test;
 
 import javax.inject.Inject;
+import java.util.HashSet;
 import java.util.List;
 
 import static com.github.quarkus.criteria.runtime.model.ComparisonOperation.*;
@@ -261,7 +262,7 @@ public class CriteriaByExampleIt {
                 .extracting("name")
                 .contains("Model S", "Model X");
 
-        tesla.setCars(carsFound);
+        tesla.setCars(new HashSet<>(carsFound));
         List<Brand> brands = brandCrud.exampleBuilder
                 .of(tesla)
                 .usingAttributesAndFetch(Brand_.cars)
@@ -343,5 +344,21 @@ public class CriteriaByExampleIt {
         assertThat(carsFound).isNotNull().hasSize(2)
                 .extracting("name")
                 .contains("Model S", "Model X");
+
+        carsFound = carService.exampleBuilder
+                .of(new Car().setName("Sentra"))
+                .usingAttributes(NOT_EQ, Car_.name)
+                .build().getResultList();
+        assertThat(carsFound).isNotNull().hasSize(3)
+                .extracting("name")
+                .contains("Model S", "Model X", "Fusion");
+
+        carsFound = carService.exampleBuilder
+                .of(new Car().setName("sentra"))
+                .usingAttributes(NOT_EQ_IGNORE_CASE, Car_.name)
+                .build().getResultList();
+        assertThat(carsFound).isNotNull().hasSize(3)
+                .extracting("name")
+                .contains("Model S", "Model X", "Fusion");
     }
 }

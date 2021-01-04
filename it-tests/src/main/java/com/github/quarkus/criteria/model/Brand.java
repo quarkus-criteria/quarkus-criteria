@@ -9,6 +9,7 @@ import com.github.quarkus.criteria.runtime.model.BaseEntity;
 
 import javax.persistence.*;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author rmpestano
@@ -24,7 +25,7 @@ public class Brand extends BaseEntity {
     private String name;
 
     @OneToMany(mappedBy = "brand", fetch = FetchType.LAZY)
-    private List<Car> cars;
+    private Set<Car> cars;
 
     public Brand() {
     }
@@ -50,11 +51,11 @@ public class Brand extends BaseEntity {
         return this;
     }
 
-    public List<Car> getCars() {
+    public Set<Car> getCars() {
         return cars;
     }
 
-    public void setCars(List<Car> cars) {
+    public void setCars(Set<Car> cars) {
         this.cars = cars;
     }
 
