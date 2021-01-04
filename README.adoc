@@ -27,7 +27,7 @@ Enables type safe and fluent criteria API for Quarkus applications via https://d
 [source, xml]
 ----
 <dependency>
-    <groupId>com.github.quarkus.criteria</groupId>
+    <groupId>com.github.quarkus-criteria</groupId>
     <artifactId>quarkus-criteria</artifactId>
     <version>1.0.0-RC1</version>
 </dependency>

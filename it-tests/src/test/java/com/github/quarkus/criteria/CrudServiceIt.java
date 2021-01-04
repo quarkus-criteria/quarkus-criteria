@@ -57,6 +57,11 @@ public class CrudServiceIt {
         assertThat(car).isNotNull()
                 .extracting("id")
                 .contains(-1);
+        Car anotherCar = carService.findById(-2);
+        assertThat(car).isNotNull()
+                .extracting("id")
+                .contains(-1);
+        assertThat(car).isNotEqualTo(anotherCar);
     }
 
     @Test
