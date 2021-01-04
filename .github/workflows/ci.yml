@@ -26,6 +26,12 @@ jobs:
         run: mvn clean verify -Pcoverage
       - name: Run it tests app
         run: java -jar it-tests/target/quarkus-criteria-it-runner.jar
+      - uses: actions/upload-artifact@master
+        with:
+          name: output
+          path: |
+            coverage-report/target/site/jacoco-aggregate/*
+            it-tests/*
   report:
     name: Report
     runs-on: ubuntu-18.04
@@ -36,5 +42,14 @@ jobs:
         uses: actions/setup-java@v1
         with:
           java-version: 11.0.4
+      - uses: actions/download-artifact@master
+        with:
+          name: output
+      - uses: actions/cache@v1
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
       - name: Coverage report
         run: mvn coveralls:report -DCOVERAGE_TOKEN=${{ secrets.COVERAGE_TOKEN }} -Pcoverage
