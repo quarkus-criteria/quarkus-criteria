@@ -125,7 +125,7 @@
                                 <!-- basically excludes classes from examples projects-->
                                 <excludes>
                                     <exclude>**/*CarService.*</exclude>
-                                    <exclude>**/*Car.*</exclude>
+                                    <exclude>**/*Car*</exclude>
                                     <exclude>**/*CarCriteria.*</exclude>
                                     <exclude>**/*Brand*</exclude>
                                     <exclude>**/*Sales*</exclude>
@@ -142,9 +142,6 @@
                         <configuration>
                             <jacocoReports>coverage-report/target/site/jacoco-aggregate/jacoco.xml</jacocoReports>
                             <repoToken>${COVERAGE_TOKEN}</repoToken>
-                            <sourceDirectories>
-                                <sourceDirectory>it-tests/target/generated-sources/apt</sourceDirectory>
-                            </sourceDirectories>
                         </configuration>
                         <dependencies>
                             <dependency>
