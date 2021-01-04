@@ -23,7 +23,7 @@ public class Brand extends BaseEntity {
 
     private String name;
 
-    @OneToMany(mappedBy = "brand")
+    @OneToMany(mappedBy = "brand", fetch = FetchType.LAZY)
     private List<Car> cars;
 
     public Brand() {

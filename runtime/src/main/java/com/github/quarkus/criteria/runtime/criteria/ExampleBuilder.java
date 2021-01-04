@@ -190,7 +190,7 @@ public class ExampleBuilder<T extends PersistenceEntity> {
                             case NOT_LIKE:
                                 criteria.notLike((SingularAttribute) attribute, value.toString());
                                 break;
-                            case NOT_LIKE_IGORE_CASE:
+                            case NOT_LIKE_IGNORE_CASE:
                                 criteria.notLikeIgnoreCase((SingularAttribute) attribute, value.toString());
                                 break;
                             case IS_EMPTY:

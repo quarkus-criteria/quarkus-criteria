@@ -34,7 +34,7 @@ public class Car extends BaseEntity {
     @Column(name = "price")
     private Double price;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private Brand brand;
 
     @OneToMany(mappedBy = "car", orphanRemoval = true)

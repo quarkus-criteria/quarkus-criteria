@@ -15,7 +15,7 @@ import org.junit.jupiter.api.Test;
 import javax.inject.Inject;
 import java.util.List;
 
-import static com.github.quarkus.criteria.runtime.model.ComparisonOperation.LT_OR_EQ;
+import static com.github.quarkus.criteria.runtime.model.ComparisonOperation.*;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 
 @DBRider
@@ -158,7 +158,7 @@ public class CriteriaByExampleIt {
                 .usingCriteria(criteriaByExample)
                 .usingAttributesAndFetch(Car_.brand)
                 .build()
-         .getResultList();
+                .getResultList();
         assertThat(carsFound).isNotNull().hasSize(1)
                 .extracting("name")
                 .contains("Sentra");
@@ -271,5 +271,77 @@ public class CriteriaByExampleIt {
         assertThat(brands).isNotNull().hasSize(1)
                 .extracting("name")
                 .contains("Tesla");
+    }
+
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldListCarsUsingPriceByExample() {
+        List<Car> carsFound = carService.exampleBuilder
+                .of(new Car().setPrice(9.999D))
+                .usingAttributes(LT, Car_.price)
+                .build().getResultList();
+        assertThat(carsFound).isNotNull().hasSize(1)
+                .extracting("name")
+                .contains("Model S");
+
+        carsFound = carService.exampleBuilder
+                .of(new Car().setPrice(9.999D))
+                .usingAttributes(LT_OR_EQ, Car_.price)
+                .build().getResultList();
+        assertThat(carsFound).isNotNull().hasSize(2)
+                .extracting("name")
+                .contains("Model S", "Model X");
+
+        carsFound = carService.exampleBuilder
+                .of(new Car().setPrice(9.999D))
+                .usingAttributes(GT, Car_.price)
+                .build().getResultList();
+        assertThat(carsFound).isNotNull().hasSize(2)
+                .extracting("name")
+                .contains("Sentra", "Fusion");
+
+        carsFound = carService.exampleBuilder
+                .of(new Car().setPrice(9.999D))
+                .usingAttributes(GT_OR_EQ, Car_.price)
+                .build().getResultList();
+        assertThat(carsFound).isNotNull().hasSize(3)
+                .extracting("name")
+                .contains("Sentra", "Fusion", "Model X");
+    }
+
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldListCarsUsingNameByExample() {
+        List<Car> carsFound = carService.exampleBuilder
+                .of(new Car().setName("%odel%"))
+                .usingAttributes(LIKE, Car_.name)
+                .build().getResultList();
+        assertThat(carsFound).isNotNull().hasSize(2)
+                .extracting("name")
+                .contains("Model S", "Model X");
+
+        carsFound = carService.exampleBuilder
+                .of(new Car().setName("%odel%"))
+                .usingAttributes(NOT_LIKE, Car_.name)
+                .build().getResultList();
+        assertThat(carsFound).isNotNull().hasSize(2)
+                .extracting("name")
+                .contains("Sentra", "Fusion");
+
+        carsFound = carService.exampleBuilder
+                .of(new Car().setName("model%"))
+                .usingAttributes(NOT_LIKE_IGNORE_CASE, Car_.name)
+                .build().getResultList();
+        assertThat(carsFound).isNotNull().hasSize(2)
+                .extracting("name")
+                .contains("Sentra", "Fusion");
+
+        carsFound = carService.exampleBuilder
+                .of(new Car().setName("model%"))
+                .usingAttributes(LIKE_IGNORE_CASE, Car_.name)
+                .build().getResultList();
+        assertThat(carsFound).isNotNull().hasSize(2)
+                .extracting("name")
+                .contains("Model S", "Model X");
     }
 }
