@@ -35,7 +35,7 @@
                 <executions>
                     <execution>
                         <id>report-aggregate</id>
-                        <phase>pre-integration-test</phase>
+                        <phase>test</phase>
                         <goals>
                             <goal>report-aggregate</goal>
                         </goals>

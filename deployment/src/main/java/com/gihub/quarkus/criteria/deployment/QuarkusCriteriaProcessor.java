@@ -27,9 +27,10 @@ public class QuarkusCriteriaProcessor {
 
     private static final List<String> BEANS_TO_VETO = Arrays.asList("org.apache.deltaspike.jpa.impl.entitymanager.DefaultEntityManagerHolder",
             "org.apache.deltaspike.data.impl.RepositoryExtension", "org.apache.deltaspike.jpa.impl.entitymanager.EntityManagerRefLookup",
-            "org.apache.deltaspike.jpa.impl.transaction.TransactionalInterceptor", "org.apache.deltaspike.jpa.spi.transaction.TransactionStrategy",
-            "org.apache.deltaspike.jpa.impl.transaction.ResourceLocalTransactionStrategy", "org.apache.deltaspike.core.spi.InterceptorStrategy",
+            "org.apache.deltaspike.jpa.spi.transaction.TransactionStrategy",
+            "org.apache.deltaspike.core.spi.InterceptorStrategy",
             "org.apache.deltaspike.data.impl.handler.QueryHandler", "org.apache.deltaspike.data.impl.meta.",
+            "org.apache.deltaspike.jpa.impl.transaction.",
             "org.apache.deltaspike.core.impl.scope.", "org.apache.deltaspike.data.impl.tx.");
 
     @BuildStep

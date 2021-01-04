@@ -124,6 +124,7 @@
                         <configuration>
                                 <!-- basically excludes classes from examples projects-->
                                 <excludes>
+                                    <exclude>**/*BaseEntity.*</exclude>
                                     <exclude>**/*CarService.*</exclude>
                                     <exclude>**/*Car*</exclude>
                                     <exclude>**/*CarCriteria.*</exclude>

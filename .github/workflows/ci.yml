@@ -23,7 +23,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
       - name: Build & Test
-        run: mvn clean verify -Pcoverage
+        run: mvn clean package -Pcoverage
       - name: Run it tests app
         run: java -jar it-tests/target/quarkus-criteria-it-runner.jar
       - uses: actions/upload-artifact@master
