@@ -3,11 +3,9 @@ package com.github.quarkus.criteria.runtime.model;
 import java.io.Serializable;
 
 /**
- *
  * @author rmpestano
  */
 public abstract class BaseEntity implements PersistenceEntity {
-
 
     public abstract <ID extends Serializable> ID getId();
 
