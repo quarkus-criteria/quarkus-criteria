@@ -1,6 +1,5 @@
 package com.github.quarkus.criteria.service;
 
-import com.github.quarkus.criteria.criteria.CarCriteria;
 import com.github.quarkus.criteria.model.*;
 import com.github.quarkus.criteria.runtime.model.Filter;
 import com.github.quarkus.criteria.runtime.service.CrudService;
@@ -23,7 +22,7 @@ import static com.github.quarkus.criteria.runtime.util.CriteriaUtils.toListOfIds
 public class CarService extends CrudService<Car> implements Serializable {
 
     @Inject
-    protected CarCriteria carCriteria;//you can create repositories to extract complex queries from your service
+    CarCriteria carCriteria;//you can create repositories to extract complex queries from your service
 
 
     /**
@@ -34,7 +33,9 @@ public class CarService extends CrudService<Car> implements Serializable {
      */
     protected Criteria<Car, Car> configPagination(Filter<Car> filter) {
 
-        Criteria<Car, Car> criteria = criteria();
+        final Criteria<Car, Car> criteria = criteria()
+                .fetch(Car_.brand)
+                .distinct();
 
         //create restrictions based on parameters map
         if (filter.hasParam("id")) {
@@ -52,9 +53,6 @@ public class CarService extends CrudService<Car> implements Serializable {
         //create restrictions based on filter entity
         if (filter.getEntity() != null) {
             Car filterEntity = filter.getEntity();
-            if(filterEntity.getId() != null) {
-                criteria.eq(Car_.id, filterEntity.getId());
-            }
             if (filterEntity.hasModel()) {
                 criteria.likeIgnoreCase(Car_.model, "%" + filterEntity.getModel());
             }
@@ -144,22 +142,6 @@ public class CarService extends CrudService<Car> implements Serializable {
                 .getResultList();
     }
 
-    public List<Car> listCars() {
-        return criteria()
-                .distinct()
-                .fetch(Car_.carSalesPoints, JoinType.LEFT)
-                .fetch(Car_.brand)
-                .join(Car_.brand, where(Brand.class)
-                        .or(criteria(Brand.class).eq(Brand_.name, "Nissan"),
-                                criteria(Brand.class).eq(Brand_.name, "Ford")))
-                .join(Car_.carSalesPoints, where(CarSalesPoint.class, JoinType.LEFT)
-                        .join(CarSalesPoint_.salesPoint, where(SalesPoint.class, JoinType.LEFT)
-                        .eqIgnoreCase(SalesPoint_.address, "ford motors address")))
-                .or(criteria().likeIgnoreCase(Car_.model, "%tanium"),
-                        criteria().eq(Car_.name, "Sentra"))
-                .getResultList();
-    }
-
     public List<CarWithNameAndPrice> carsProjection() {
         return criteria()
                 .select(CarWithNameAndPrice.class, attribute(Car_.name), attribute(Car_.price))
@@ -172,7 +154,6 @@ public class CarService extends CrudService<Car> implements Serializable {
                         .likeIgnoreCase(SalesPoint_.name, "%Tesla%")))
                 .getResultList();
     }
-
 
     public List<Car> findByBrand(Brand brand) {
         return criteria()

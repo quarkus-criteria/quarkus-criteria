@@ -36,6 +36,7 @@
         <deltaspike.version>1.9.4</deltaspike.version>
         <jacoco.version>0.8.6</jacoco.version>
         <surefire.version>2.22.0</surefire.version>
+        <failsafe.version>2.22.0</failsafe.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <maven.compiler.source>1.8</maven.compiler.source>
         <maven.compiler.target>1.8</maven.compiler.target>
@@ -45,8 +46,8 @@
         <module>deployment</module>
         <module>runtime</module>
         <module>it-tests</module>
-        <module>examples</module>
         <module>coverage-report</module>
+        <module>system-tests</module>
     </modules>
 
     <dependencyManagement>

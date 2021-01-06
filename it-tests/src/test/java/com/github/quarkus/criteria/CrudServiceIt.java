@@ -6,7 +6,7 @@ import com.github.database.rider.core.configuration.DataSetConfig;
 import com.github.database.rider.core.dsl.RiderDSL;
 import com.github.quarkus.criteria.model.*;
 import com.github.quarkus.criteria.runtime.model.Filter;
-import com.github.quarkus.criteria.runtime.model.Sort;
+import com.github.quarkus.criteria.runtime.model.SortType;
 import com.github.quarkus.criteria.runtime.service.CrudService;
 import com.github.quarkus.criteria.runtime.service.Service;
 import com.github.quarkus.criteria.service.CarService;
@@ -18,6 +18,7 @@ import java.sql.SQLException;
 import java.util.Arrays;
 import java.util.List;
 
+import static com.github.quarkus.criteria.runtime.util.CriteriaUtils.toListOfIds;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
 import static org.junit.Assert.*;
 
@@ -125,34 +126,17 @@ public class CrudServiceIt {
 
     @Test
     @DataSet("cars.yml")
-    public void shouldRemoveCar() {
-        Car car = getCar();
-        carService.remove(car);
-        assertEquals(carService.count(carService.criteria().eq(Car_.id, 1)).intValue(), 0);
-    }
-
-    @Test
-    @DataSet("cars.yml")
-    public void shouldRemoveCars() {
-        assertThat(carService.count()).isEqualTo(4L);
-        List<Car> cars = carService.criteria().getResultList();
-        carService.remove(cars);
-        assertEquals(carService.count().intValue(), 0);
-    }
-
-    @Test
-    @DataSet("cars.yml")
     public void shouldRemoveCarNotAttachedToPersistenceContext() {
         assertThat(carService.count()).isEqualTo(4L);
         Car car = new Car(-1);
-        carService.remove(car);
+        carService.delete(car);
         assertThat(carService.count()).isEqualTo(3L);
     }
 
     @Test
     @DataSet("cars.yml")
     public void shouldUpdateCar() {
-        Car car = getCar();
+        Car car = getCar(-1);
         car.setName("updated name");
         carService.update(car);
         Car carFound = carService.criteria().eq(Car_.id, -1).getSingleResult();
@@ -233,7 +217,7 @@ public class CrudServiceIt {
     @DataSet("cars.yml")
     public void shouldPaginateCars() {
         Filter<Car> carFilter = new Filter<Car>().setFirst(0).setPageSize(1)
-                .setSort(Sort.ASCENDING)
+                .setSortType(SortType.ASCENDING)
                 .setSortField(Car_.id.getName());
         List<Car> cars = carService.paginate(carFilter);
         assertNotNull(cars);
@@ -257,7 +241,7 @@ public class CrudServiceIt {
                 .setFirst(0)
                 .setPageSize(4)
                 .setSortField("model")
-                .setSort(Sort.DESCENDING);
+                .setSortType(SortType.DESCENDING);
         List<Car> cars = carService.paginate(carFilter);
         assertThat(cars).isNotNull().hasSize(4);
         assertTrue(cars.get(0).getModel().equals("Porche274"));
@@ -270,8 +254,8 @@ public class CrudServiceIt {
         Filter<Car> carFilter = new Filter<Car>()
                 .setFirst(0)
                 .setPageSize(4)
-                .addMultSort(Sort.DESCENDING, "model")
-                .addMultSort(Sort.ASCENDING, "price");
+                .addMultSort(SortType.DESCENDING, "model")
+                .addMultSort(SortType.ASCENDING, "price");
 
         List<Car> cars = carService.paginate(carFilter);
         assertThat(cars).isNotNull().hasSize(4);
@@ -387,7 +371,7 @@ public class CrudServiceIt {
         List<Brand> brands = brandCrud.criteria()
                 .distinct()
                 .join(Brand_.cars, brandCrud.where(Car.class)
-                .in(Car_.id, brandCrud.toListOfIds(carsFound, new Integer[0])))
+                .in(Car_.id, toListOfIds(carsFound, new Integer[0])))
                 .getResultList();
 
         assertThat(brands).isNotNull().hasSize(1)
@@ -421,6 +405,31 @@ public class CrudServiceIt {
     }
 
     @Test
+    @DataSet("cars.yml")
+    public void shoulDeleteCar() {
+        Car car = getCar(-1);
+        carService.delete(car);
+        assertEquals(carService.count(carService.criteria().eq(Car_.id, -1))
+                .intValue(), 0);
+    }
+
+    @Test
+    @DataSet("cars.yml")
+    public void shoulDeleteCarById() {
+        carService.deleteById(-1);
+        assertEquals(carService.count(new Filter<>(new Car(-1))).intValue(), 0);
+    }
+
+    @Test
+    @DataSet("cars.yml")
+    public void shouldDeleteCars() {
+        assertThat(carService.count()).isEqualTo(4L);
+        List<Car> cars = carService.list();
+        carService.delete(cars);
+        assertEquals(carService.count().intValue(), 0);
+    }
+
+    @Test
     public void shouldDeleteEntitiesInBatches() throws SQLException {
         final DataSetConfig dataSetConfig = new DataSetConfig("car-batch.yml");
         RiderDSL.DBUnitConfigDSL riderDSL = RiderDSL.withConnection(dataSource.getConnection())
@@ -428,51 +437,44 @@ public class CrudServiceIt {
         riderDSL.createDataSet();
         assertThat(carCrud.count()).isEqualTo(10L);
         //batch equal to entities size
-        int deleted = carCrud.removeBatch(carCrud.criteria().getResultList(), 10);
+        int deleted = carCrud.deleteBatch(carCrud.criteria().getResultList(), 10);
         assertThat(deleted).isEqualTo(10);
         assertThat(carCrud.count()).isEqualTo(0L);
         riderDSL.createDataSet();
         assertThat(carCrud.count()).isEqualTo(10L);
         //batch < entities size
-        deleted = carCrud.removeBatch(carCrud.criteria().getResultList(), 9);
+        deleted = carCrud.deleteBatch(carCrud.criteria().getResultList(), 9);
         assertThat(deleted).isEqualTo(10);
         assertThat(carCrud.count()).isEqualTo(0L);
         riderDSL.createDataSet();
         // batch > entities size
-        deleted = carCrud.removeBatch(carCrud.criteria().getResultList(), 11);
+        deleted = carCrud.deleteBatch(carCrud.criteria().getResultList(), 11);
         assertThat(deleted).isEqualTo(10);
         assertThat(carCrud.count()).isEqualTo(0L);
         riderDSL.createDataSet();
         // invalid batch size, use default batch size
-        deleted = carCrud.removeBatch(carCrud.criteria().getResultList(), 0);
+        deleted = carCrud.deleteBatch(carCrud.criteria().getResultList(), 0);
         assertThat(deleted).isEqualTo(10);
         assertThat(carCrud.count()).isEqualTo(0L);
         riderDSL.createDataSet();
         // small batch size
-        deleted = carCrud.removeBatch(carCrud.criteria().getResultList(), 1);
+        deleted = carCrud.deleteBatch(carCrud.criteria().getResultList(), 1);
         assertThat(deleted).isEqualTo(10);
         assertThat(carCrud.count()).isEqualTo(0L);
         riderDSL.createDataSet();
         // small batch size
-        deleted = carCrud.removeBatch(carCrud.criteria().getResultList(), 3);
+        deleted = carCrud.deleteBatch(carCrud.criteria().getResultList(), 3);
         assertThat(deleted).isEqualTo(10);
         assertThat(carCrud.count()).isEqualTo(0L);
         riderDSL.createDataSet();
         // 'prime' batch size
-        deleted = carCrud.removeBatch(carCrud.criteria().getResultList(), 7);
+        deleted = carCrud.deleteBatch(carCrud.criteria().getResultList(), 7);
         assertThat(deleted).isEqualTo(10);
         assertThat(carCrud.count()).isEqualTo(0L);
     }
 
-    private Car getCar() {
-
-        return getCar(-1);
-    }
 
     private Car getCar(Integer id) {
-        if (id == null) {
-            return getCar();
-        }
         assertEquals(carService.count(carService.criteria().eq(Car_.id, id)), Long.valueOf(1));
         Car car = carService.findById(id);
         assertNotNull(car);

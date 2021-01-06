@@ -7,15 +7,15 @@ import java.util.Objects;
  */
 public class MultiSort {
     
-    private final Sort sort;
+    private final SortType sort;
     private final String sortField;
 
-    public MultiSort(Sort sort, String sortField) {
+    public MultiSort(SortType sort, String sortField) {
         this.sort = sort;
         this.sortField = sortField;
     }
 
-    public Sort getSort() {
+    public SortType getSort() {
         return sort;
     }
 

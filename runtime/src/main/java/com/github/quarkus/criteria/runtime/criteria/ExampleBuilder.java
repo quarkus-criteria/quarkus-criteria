@@ -4,6 +4,7 @@ import com.github.quarkus.criteria.runtime.model.ComparisonOperation;
 import com.github.quarkus.criteria.runtime.model.PersistenceEntity;
 import org.apache.deltaspike.data.api.criteria.Criteria;
 import org.apache.deltaspike.data.impl.criteria.QueryCriteria;
+import org.jboss.logmanager.Level;
 
 import javax.persistence.EntityManager;
 import javax.persistence.criteria.JoinType;
@@ -146,7 +147,7 @@ public class ExampleBuilder<T extends PersistenceEntity> {
                         operation = ComparisonOperation.EQ;
                     }
                     if (value != null || NULL_OPERATIONS.contains(operation)) {
-                        LOG.fine(format("Adding an %s restriction on attribute %s using value %s.", operation.name(), attribute.getName(), value));
+                        LOG.log(Level.DEBUG, format("Adding an %s restriction on attribute %s using value %s.", operation.name(), attribute.getName(), value));
                         if (fetch) {
                             criteria.fetch((SingularAttribute) attribute, JoinType.INNER);
                         }
@@ -220,7 +221,7 @@ public class ExampleBuilder<T extends PersistenceEntity> {
                         if (value instanceof Collection && ((Collection) value).isEmpty()) {
                             return;
                         }
-                        LOG.fine(format("Adding an 'in'restriction on attribute %s using value %s.", attribute.getName(), value));
+                        LOG.log(Level.DEBUG, format("Adding an 'in'restriction on attribute %s using value %s.", attribute.getName(), value));
                         Collection<PersistenceEntity> association = (Collection<PersistenceEntity>) value;
                         SingularAttribute id = exampleBuilder.entityManager.getMetamodel().entity(listAttribute.getElementType().getJavaType()).getId(association.iterator().next().getId().getClass());
                         List<Serializable> ids = new ArrayList<>();

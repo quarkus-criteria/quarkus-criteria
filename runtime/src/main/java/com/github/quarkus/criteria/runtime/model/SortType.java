@@ -3,7 +3,7 @@ package com.github.quarkus.criteria.runtime.model;
 /**
  * @author rmpestano
  */
-public enum Sort {
+public enum SortType {
 
     ASCENDING, DESCENDING, UNSORTED;
 

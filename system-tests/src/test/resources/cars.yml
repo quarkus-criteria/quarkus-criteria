@@ -1,0 +1,72 @@
+brand:
+  - id: 1
+    name: Ford
+  - id: 2
+    name: Nissan
+  - id: 3
+    name: Tesla
+
+car:
+  - id: 1
+    name: "Fusion"
+    model: "Titanium"
+    price: 15.850
+    brand_id: 1
+    version: 0
+  - id: 2
+    name: "Sentra"
+    model: "SE"
+    price: 12.999
+    brand_id: 2
+    version: 0
+  - id: 3
+    name: "Model S"
+    model: "S"
+    price: 5.2999
+    brand_id: 3
+    version: 0
+  - id: 4
+    name: "Model X"
+    model: "S"
+    price: 9.999
+    brand_id: 3
+    version: 0
+
+sales_point:
+  - id1: 1
+    id2: 2
+    name: Ford Motors
+    address: "Ford motors address"
+  - id1: 1
+    id2: 3
+    name: Ford Motors2
+    address: "Ford motors2 address"
+  - id1: 1
+    id2: 4
+    name: Nissan Sales
+    address: "Nissan address"
+  - id1: 1
+    id2: 5
+    name: Tesla HQ
+    address: "Tesla HQ address"
+car_sales_point:
+  - car_id: 1
+    salespoints_id1: 1
+    salespoints_id2: 2
+    id1: 1
+    id2: 2
+  - car_id: 1
+    salespoints_id1: 1
+    salespoints_id2: 3
+    id1: 1
+    id2: 3
+  - car_id: 2
+    salespoints_id1: 1
+    salespoints_id2: 4
+    id1: 1
+    id2: 4
+  - car_id: 3
+    salespoints_id1: 1
+    salespoints_id2: 5
+    id1: 1
+    id2: 5

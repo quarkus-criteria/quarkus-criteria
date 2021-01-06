@@ -19,7 +19,6 @@ image:https://img.shields.io/maven-central/v/com.github.quarkus.criteria/quarkus
 
 Enables type safe and fluent criteria API for Quarkus applications via https://deltaspike.apache.org/documentation/data.html#JPACriteriaAPISupport[DeltaSpike Criteria^].
 
- 
 == Usage
 
 * Add the following dependency:
@@ -268,18 +267,23 @@ Or run via quarkus:dev:
 
 `mvn compile quarkus:dev`
 
+== System tests
 
-== Examples
+System tests are located in `system-tests` modules, to run them run maven command:
 
-Sample applications are located in `examples` module
-
-== Run native tests
-
-`mvn verify -Pnative`
-
+`mvn test`
 
 === Native mode
 
-To run o quarkus native use:
+To run system tests in native mode:
 
-`mvn clean package -Pnative && ./target/quarkus-criteria-it-runner`
+`mvn verify -Pnative`
+
+To run native tests inside docker (without the need to install GraalVM):
+
+* MacOS:
++
+`mvn verify -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-mandrel:20.3-java11 -Pnative`
+* Linux
++
+`mvn verify -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-native-image:20.3.0-java11 -Pnative`

@@ -4,9 +4,9 @@ import com.github.quarkus.criteria.runtime.criteria.BaseCriteriaSupport;
 import com.github.quarkus.criteria.runtime.model.Filter;
 import com.github.quarkus.criteria.runtime.model.MultiSort;
 import com.github.quarkus.criteria.runtime.model.PersistenceEntity;
-import com.github.quarkus.criteria.runtime.model.Sort;
+import com.github.quarkus.criteria.runtime.model.SortType;
 import org.apache.deltaspike.data.api.criteria.Criteria;
-
+import org.jboss.logmanager.Level;
 import javax.enterprise.context.Dependent;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.inject.Inject;
@@ -54,7 +54,7 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
      */
     public List<T> paginate(Filter<T> filter) {
         validateFilter(filter);
-        Criteria<T, T> criteria = configRestrictions(filter);
+        Criteria<T, T> criteria = configPagination(filter);
         configSort(filter, criteria);
         return criteria.createQuery()
                 .setFirstResult(filter.getFirst())
@@ -77,7 +77,12 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
     }
 
     @Transactional
-    public void remove(T entity) {
+    public void deleteById(Serializable id) {
+        Optional.ofNullable(entityManager.getReference(entityClass, id)).ifPresent(this::delete);
+    }
+
+    @Transactional
+    public void delete(T entity) {
         if (entity == null) {
             throw new RuntimeException("Record cannot be null");
         }
@@ -86,22 +91,22 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
             throw new RuntimeException("Record cannot be transient");
         }
         beforeAll(entity);
-        beforeRemove(entity);
+        beforeDelete(entity);
         if (!entityManager.contains(entity)) {
             entity = entityManager.find(entityClass, entity.getId());
         }
         entityManager.remove(entity);
-        afterRemove(entity);
+        afterDelete(entity);
         afterAll(entity);
     }
 
     @Transactional
-    public void remove(List<T> entities) {
+    public void delete(List<T> entities) {
         if (entities == null) {
             throw new RuntimeException("Entities cannot be null");
         }
         for (T t : entities) {
-            this.remove(t);
+            this.delete(t);
         }
     }
 
@@ -113,7 +118,7 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
      * @return number of deleted entities
      */
     @Transactional
-    public int removeBatch(List<T> entities, Integer batchSize) {
+    public int deleteBatch(List<T> entities, Integer batchSize) {
         if (batchSize == null || batchSize < 1) {
             LOG.warning("Invalid batch size to remove entities, using default batch size: " + DEFAULT_REMOVAL_BATCH_SIZE);
             batchSize = DEFAULT_REMOVAL_BATCH_SIZE;
@@ -127,7 +132,7 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
         final int batches = (int) Math.ceil((double)total / batchSize);
         for (int i = 0; i < batches; i++) {
             int currentBatch = i+1;
-            LOG.info("Removing batch: " + currentBatch);
+            LOG.log(Level.DEBUG, "Removing batch: " + currentBatch);
             int batchStart = batchSize * i;
             int batchEnd = batchStart + batchSize;
             if (batchEnd > total) {
@@ -135,9 +140,13 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
             }
             List<T> entitiesBatch = entities.subList(batchStart, batchEnd);
             Set<Serializable> pks = collectEntitiesPk(entitiesBatch);
+            if(pks.size() == 0) {
+                LOG.warning(format("Skipping batch %d because no primary keys were found in entities to delete.", currentBatch));
+                continue;
+            }
             final int entitiesDeleted = getEntityManager().createQuery("DELETE from " + entityClass.getSimpleName() + " e WHERE e." + idFieldName + " IN :ids")
                     .setParameter("ids", pks).executeUpdate();
-            LOG.info(format("Entities removed in batch %d: %d ", i, entitiesDeleted));
+            LOG.log(Level.DEBUG, format("Entities removed in batch %d: %d ", i, entitiesDeleted));
             removedEntitiesCount += entitiesDeleted;
         }
         return removedEntitiesCount;
@@ -173,6 +182,10 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
         return entity;
     }
 
+    public List<T> list() {
+        return criteria().getResultList();
+    }
+
     /**
      * Count all
      */
@@ -187,7 +200,7 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
      * @return
      */
     public Long count(Filter<T> filter) {
-        return count(configRestrictions(filter));
+        return count(configPagination(filter));
     }
 
     /**
@@ -230,10 +243,10 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
     public void afterUpdate(T entity) {
     }
 
-    public void beforeRemove(T entity) {
+    public void beforeDelete(T entity) {
     }
 
-    public void afterRemove(T entity) {
+    public void afterDelete(T entity) {
     }
 
     public void afterAll(T entity) {
@@ -245,44 +258,28 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
                 addSort(criteria, multiSort.getSort(), multiSort.getSortField());
             }
         } else { //single field sort
-            addSort(criteria, filter.getSort(), filter.getSortField());
+            addSort(criteria, filter.getSortType(), filter.getSortField());
         }
     }
 
     /**
-     * Called before pagination, should be overridden. By default there is no restrictions.
+     * Called before pagination, should be overridden. By default there is no restrictions when paging.
      *
      * @param filter used to create restrictions
      * @return a criteria with configured restrictions
      */
-    protected Criteria<T, T> configRestrictions(Filter<T> filter) {
+    protected Criteria<T, T> configPagination(Filter<T> filter) {
         return criteria();
     }
 
-    /**
-     * Creates an array of Ids (pks) from a list of entities.
-     * It is useful when working with `in clauses` on DeltaSpike criteria
-     * because the API only support primitive arrays.
-     *
-     * @param entities list of entities to create
-     * @param idsType  the type of the pk list, e.g new Long[0]
-     * @return primitive array containing entities pks.
-     */
-    public  <ID extends Serializable> ID[] toListOfIds(Collection<? extends PersistenceEntity> entities, ID[] idsType) {
-        Set<ID> ids = new HashSet<>();
-        for (PersistenceEntity entity : entities) {
-            ids.add(entity.getId());
-        }
-        return ids.toArray(idsType);
-    }
 
-    protected void addSort(Criteria<T, T> criteria, Sort sort, String sortField) {
+    protected void addSort(Criteria<T, T> criteria, SortType sort, String sortField) {
         if (sortField != null) {
             SingularAttribute sortAttribute = getEntityManager().getMetamodel().entity(entityClass).getSingularAttribute(sortField);
-            if (sort.equals(Sort.UNSORTED)) {
-                sort = Sort.ASCENDING;
+            if (sort.equals(SortType.UNSORTED)) {
+                sort = SortType.ASCENDING;
             }
-            if (sort.equals(Sort.ASCENDING)) {
+            if (sort.equals(SortType.ASCENDING)) {
                 criteria.orderAsc(sortAttribute);
             } else {
                 criteria.orderDesc(sortAttribute);
@@ -297,6 +294,9 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
     }
 
     private Set<Serializable> collectEntitiesPk(List<T> entities) {
+        if(entities == null || entities.isEmpty()) {
+            return Collections.emptySet();
+        }
         return entities.stream()
                 .map(e -> (Serializable) e.getId())
                 .collect(Collectors.toSet());
