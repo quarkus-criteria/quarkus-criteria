@@ -24,11 +24,6 @@
             <artifactId>quarkus-criteria-it</artifactId>
             <version>${project.version}</version>
         </dependency>
-        <dependency>
-            <groupId>com.github.quarkus-criteria</groupId>
-            <artifactId>quarkus-criteria-st</artifactId>
-            <version>${project.version}</version>
-        </dependency>
     </dependencies>
 
     <build>

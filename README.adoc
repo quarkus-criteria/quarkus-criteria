@@ -106,7 +106,7 @@ TIP: See https://docs.jboss.org/hibernate/orm/5.0/topical/html/metamodelgen/Meta
 
 === Examples
 
-The easiest way to use quarkus criteria to query an entity is via *generic injection* of `CrudService`:
+The easiest way to use quarkus criteria is via *generic injection* of `CrudService`:
 
 [source, java]
 ----
@@ -122,13 +122,13 @@ crudService.criteria()
    .fetch(Car_.carSalesPoints, JoinType.LEFT) // fetches salesPoint list in result
    .fetch(Car_.brand)
    .join(Car_.brand, where(Brand.class)
-        .or(criteria(Brand.class).eq(Brand_.name, "Nissan"), //by brand name
-           criteria(Brand.class).eq(Brand_.name, "Ford")))
-   .join(Car_.carSalesPoints, where(CarSalesPoint.class, JoinType.LEFT)  //by toMany association property (address)
-        .join(CarSalesPoint_.salesPoint, where(SalesPoint.class, JoinType.LEFT) // car -> carSalesPoint -> salesPoint.address
+        .or(crudService.criteria(Brand.class).eq(Brand_.name, "Nissan"), //by brand name
+           crudService.criteria(Brand.class).eq(Brand_.name, "Ford")))
+   .join(Car_.carSalesPoints, crudService.criteria().where(CarSalesPoint.class, JoinType.LEFT)  //by toMany association property (address)
+        .join(CarSalesPoint_.salesPoint, crudService.criteria().where(SalesPoint.class, JoinType.LEFT) // car -> carSalesPoint -> salesPoint.address
                 .eqIgnoreCase(SalesPoint_.address, "ford motors address")))
    .or(criteria().likeIgnoreCase(Car_.model, "%tanium"),
-                 criteria().eq(Car_.name, "Sentra"))
+                 crudService.criteria().eq(Car_.name, "Sentra"))
    .getResultList();
 
 // aggregation function
@@ -218,7 +218,6 @@ You can query by example using `exampleBuilder`:
 ----
 <1> select which attributes to consider from example entity, if no attribute is provided then non null properties from example entity  will be considered.
 
-
 A bit more complex example:
 
 [source, java]
@@ -269,7 +268,7 @@ Or run via quarkus:dev:
 
 == System tests
 
-System tests are located in `system-tests` modules, to run them run maven command:
+System tests are located in `system-tests` module, to run them use maven command:
 
 `mvn test`
 
