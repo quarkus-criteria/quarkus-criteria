@@ -70,3 +70,8 @@ car_sales_point:
     SALESPOINTS_ID2: 5
     id1: 1
     id2: 5
+  - car_id: 4
+    SALESPOINTS_ID1: 1
+    SALESPOINTS_ID2: 5
+    id1: 1
+    id2: 5

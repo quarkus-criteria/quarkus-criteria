@@ -15,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import javax.inject.Inject;
 import java.util.HashSet;
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.github.quarkus.criteria.runtime.model.ComparisonOperation.*;
 import static org.assertj.core.api.AssertionsForInterfaceTypes.assertThat;
@@ -164,6 +165,68 @@ public class CriteriaByExampleIt {
                 .extracting("name")
                 .contains("Sentra");
         assertThat(carsFound.get(0).getBrand().getName()).isEqualTo("Nissan");
+    }
+
+
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldFindCarByBrandNameExampleCriteria() {
+        Brand brand = new Brand().setName("niss%");
+        Car carExample = new Car().setBrand(brand);
+        carExample.setBrand(brand);//brand = Nissan
+
+        List<Car> carsFound = carService
+                .exampleBuilder.of(carExample)
+                .usingAttributesAndFetch(LIKE_IGNORE_CASE, Brand_.name)
+                .build()
+                .getResultList();
+
+        assertThat(carsFound).isNotNull().hasSize(1)
+                .extracting("name")
+                .contains("Sentra");
+        assertThat(carsFound.get(0).getBrand().getName()).isEqualTo("Nissan");
+    }
+
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldFindCarsBySalesPointAddressExampleCriteria() {
+        SalesPoint salesPoint = new SalesPoint().setAddress("Tesla HQ address");
+        CarSalesPoint carSalesPointExample = new CarSalesPoint().setSalesPoint(salesPoint);
+
+        List<CarSalesPoint> carSalesPointsFound = carSalesPointCrud
+                .exampleBuilder.of(carSalesPointExample)
+                .usingCriteria(carSalesPointCrud.criteria().distinct())
+                .usingAttributesAndFetch(SalesPoint_.address)
+                .build()
+                .getResultList();
+        assertThat(carSalesPointsFound).isNotNull().hasSize(2);
+        List<Car> carsFound = carSalesPointsFound.stream()
+                .map(carSalesPoint -> carSalesPoint.getCar())
+                .collect(Collectors.toUnmodifiableList());
+        assertThat(carsFound).isNotNull().hasSize(2)
+                .extracting("name")
+                .contains("Model S", "Model X");
+    }
+
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldFindCarsBySalesPointIdExampleCriteria() {
+        SalesPoint salesPoint = new SalesPoint().setSalesPointPK(new SalesPointPK(1L, 5L));
+        CarSalesPoint carSalesPointExample = new CarSalesPoint().setSalesPoint(salesPoint);
+
+        List<CarSalesPoint> carSalesPointsFound = carSalesPointCrud
+                .exampleBuilder.of(carSalesPointExample)
+                .usingCriteria(carSalesPointCrud.criteria().distinct())
+                .usingAttributesAndFetch(CarSalesPoint_.salesPoint)
+                .build()
+                .getResultList();
+        assertThat(carSalesPointsFound).isNotNull().hasSize(2);
+        List<Car> carsFound = carSalesPointsFound.stream()
+                .map(carSalesPoint -> carSalesPoint.getCar())
+                .collect(Collectors.toUnmodifiableList());
+        assertThat(carsFound).isNotNull().hasSize(2)
+                .extracting("name")
+                .contains("Model S", "Model X");
     }
 
     @Test

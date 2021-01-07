@@ -6,6 +6,7 @@ import com.github.database.rider.core.configuration.DataSetConfig;
 import com.github.database.rider.core.dsl.RiderDSL;
 import com.github.quarkus.criteria.model.*;
 import com.github.quarkus.criteria.runtime.model.Filter;
+import com.github.quarkus.criteria.runtime.model.MultiSort;
 import com.github.quarkus.criteria.runtime.model.SortType;
 import com.github.quarkus.criteria.runtime.service.CrudService;
 import com.github.quarkus.criteria.runtime.service.Service;
@@ -246,6 +247,20 @@ public class CrudServiceIt {
         assertThat(cars).isNotNull().hasSize(4);
         assertTrue(cars.get(0).getModel().equals("Porche274"));
         assertTrue(cars.get(3).getModel().equals("Ferrari"));
+    }
+
+    @Test
+    @DataSet("cars.yml")
+    public void shouldPaginateAndSortCarsByNameAndModel() {
+        Filter<Car> carFilter = new Filter<Car>()
+                .setFirst(0)
+                .setPageSize(4)
+                .addMultSort(SortType.DESCENDING, "model")
+                .addMultSort(SortType.DESCENDING, "name");
+        List<Car> cars = carService.paginate(carFilter);
+        assertThat(cars).isNotNull().hasSize(4);
+        assertTrue(cars.get(0).getModel().equals("Porche274"));
+        assertTrue(cars.get(1).getModel().equals("Porche"));
     }
 
     @Test

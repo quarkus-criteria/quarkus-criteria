@@ -24,6 +24,10 @@ public class CarSalesPoint implements PersistenceEntity {
     public CarSalesPoint() {
     }
 
+    public CarSalesPoint(CarSalesPointId carSalesPointId) {
+        this.carSalesPointId = carSalesPointId;
+    }
+
     public CarSalesPoint(Car car, SalesPoint salesPoint) {
         this.car = car;
         this.salesPoint = salesPoint;
@@ -42,16 +46,18 @@ public class CarSalesPoint implements PersistenceEntity {
         return car;
     }
 
-    public void setCar(Car car) {
+    public CarSalesPoint setCar(Car car) {
         this.car = car;
+        return this;
     }
 
     public SalesPoint getSalesPoint() {
         return salesPoint;
     }
 
-    public void setSalesPoint(SalesPoint salesPoint) {
+    public CarSalesPoint setSalesPoint(SalesPoint salesPoint) {
         this.salesPoint = salesPoint;
+        return this;
     }
 
     @Override

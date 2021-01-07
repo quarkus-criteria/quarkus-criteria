@@ -32,8 +32,9 @@ public class SalesPoint implements PersistenceEntity {
         return salesPointPK;
     }
 
-    public void setSalesPointPK(SalesPointPK salesPointPK) {
+    public SalesPoint setSalesPointPK(SalesPointPK salesPointPK) {
         this.salesPointPK = salesPointPK;
+        return this;
     }
 
     public String getName() {
