@@ -90,4 +90,4 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-maven-
       - name: Deploy snapshots
-        run: mvn deploy -Prelease --settings settings.xml -DMAVEN.USER=${{secrets.MAVEN_USER}} -DMAVEN.USER=${{secrets.MAVEN_PASS}}
+        run: mvn deploy -Prelease --settings settings.xml -DMAVEN.USER=${{secrets.MAVEN_USER}} -DMAVEN.PASS=${{secrets.MAVEN_PASS}}
