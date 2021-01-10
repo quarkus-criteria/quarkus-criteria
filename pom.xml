@@ -32,6 +32,7 @@
     <properties>
         <quarkus.version>1.10.5.Final</quarkus.version>
         <deltaspike.version>1.9.4</deltaspike.version>
+        <dbrider.version>1.21.1</dbrider.version>
         <jacoco.version>0.8.6</jacoco.version>
         <surefire.version>2.22.0</surefire.version>
         <failsafe.version>2.22.0</failsafe.version>
