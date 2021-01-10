@@ -103,7 +103,7 @@ TIP: See https://docs.jboss.org/hibernate/orm/5.0/topical/html/metamodelgen/Meta
 
 * Now you're ready to use https://deltaspike.apache.org/documentation/data.html#JPACriteriaAPISupport[DeltaSpike type safe fluent criteria API] on your Quarkus application
 
-For examples below consider the following entities:
+For examples below consider the following entities associations:
 
 image::entities.png[]
 
@@ -342,7 +342,7 @@ If no comparisonOperation is provided then `EQ` will be used.
  Car carExample = new Car().model("Ferrari");
  List<Car> cars = carService
       .exampleBuilder.of(carExample, ComparisonOperation)
-      .usingAttributes(Car_.model).build() <1>
+      .usingAttributes(Car_.model).build()
       .getResultList();
 
 ----
@@ -359,7 +359,7 @@ List<CarSalesPoint> carSalesPointsFound = carSalesPointCrud
         .usingAttributes(SalesPoint_.address)
         .build()
         .distinct()
-        .fetch(CarSalesPoint_.salesPoint)
+        .fetch(CarSalesPoint_.salesPoint) <1>
         .getResultList();
 assertThat(carSalesPointsFound).isNotNull().hasSize(2);
 List<Car> carsFound = carSalesPointsFound.stream()
@@ -369,7 +369,7 @@ assertThat(carsFound).isNotNull().hasSize(2)
         .extracting("name")
         .contains("Model S", "Model X");
 ----
-
+<1> Fatch association attribute in result list
 
 List brands by sales point address:
 
@@ -469,6 +469,7 @@ After that just build and start the application:
 
 Snapshots are available in maven central, to use it just add the following snippet in your pom.xml:
 
+----
 <repositories>
     <repository>
         <snapshots/>
@@ -477,3 +478,4 @@ Snapshots are available in maven central, to use it just add the following snipp
         <url>https://oss.sonatype.org/content/repositories/snapshots</url>
     </repository>
 </repositories>
+----
