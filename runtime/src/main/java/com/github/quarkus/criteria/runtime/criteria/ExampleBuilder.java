@@ -35,6 +35,9 @@ public class ExampleBuilder<T extends PersistenceEntity> {
         }
     }
 
+    /**
+     * @param example the example entity which values will be used to create the query
+     */
     public ExampleBuilderDsl of(T example) {
         return new ExampleBuilderDsl(example, this);
     }
@@ -57,6 +60,10 @@ public class ExampleBuilder<T extends PersistenceEntity> {
             this.exampleAttributes = resolveExampleEntityAttributes();
         }
 
+        /**
+         *
+         * @return A criteria populated with restrictions based on example entity
+         */
         public Criteria<T, ?> build() {
             if (!hasRestrictions) {
                 criteria = usingAttributes().build();
@@ -87,7 +94,6 @@ public class ExampleBuilder<T extends PersistenceEntity> {
         /**
          * A criteria will be created using the example entity and provided attributes to restrict the query.
          * It will use comparisonOperation for comparing non association attributes.
-         * For <code>oneToOne</code> associations the entity PK will be compared and for toMany association an <code>in</code> for comparing associated entities PKs
          *
          * @param comparisonOperation the operation to be used while comparing the attributes.
          * @param usingAttributes     attributes from example entity to consider. If no attribute is provided then non null attributes will be used.

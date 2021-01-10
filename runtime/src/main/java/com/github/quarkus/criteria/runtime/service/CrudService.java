@@ -86,7 +86,6 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
         if (entity == null) {
             throw new RuntimeException("Record cannot be null");
         }
-
         if (entity.getId() == null) {
             throw new RuntimeException("Record cannot be transient");
         }
@@ -194,7 +193,7 @@ public class CrudService<T extends PersistenceEntity> extends BaseCriteriaSuppor
     }
 
     /**
-     * Count by filter using configRestrictions to count
+     * Count by filter using {@link CrudService#configPagination(Filter)} to count
      *
      * @param filter
      * @return
