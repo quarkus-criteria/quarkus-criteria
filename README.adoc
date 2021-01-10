@@ -369,6 +369,52 @@ assertThat(carsFound).isNotNull().hasSize(2)
         .extracting("name")
         .contains("Model S", "Model X");
 ----
+
+
+List brands by sales point address:
+
+[source, java]
+----
+SalesPoint salesPoint = new SalesPoint()
+        .setAddress("Tesla HQ address");
+Set<Car> cars = Set.of(new Car().addSalesPoint(salesPoint));
+Brand brandExample = new Brand().setCars(cars);
+
+List<Brand> brands = brandCrud.exampleBuilder
+        .of(brandExample)
+        .usingAttributes(EQ, SalesPoint_.address)
+        .build()
+        .distinct()
+        .getResultList();
+assertThat(brands).isNotNull().hasSize(1)
+        .extracting(brand -> brand.getName())
+        .contains("Tesla");
+----
+
+The example criteria above will generate following select:
+
+----
+Hibernate:
+    select
+        distinct brand0_.id as id1_0_,
+        brand0_.name as name2_0_
+    from
+        brand brand0_
+    inner join
+        car cars1_
+            on brand0_.id=cars1_.brand_id
+    inner join
+        car_sales_point carsalespo2_
+            on cars1_.id=carsalespo2_.car_id
+    inner join
+        sales_point salespoint3_
+            on carsalespo2_.SALESPOINTS_ID1=salespoint3_.ID1
+            and carsalespo2_.SALESPOINTS_ID2=salespoint3_.ID2
+    where
+        salespoint3_.address=?
+----
+
+
 TIP: More examples https://github.com/quarkus-criteria/quarkus-criteria/blob/master/it-tests/src/test/java/com/github/quarkus/criteria/CriteriaByExampleIt.java#L27[can be found here].
 
 
