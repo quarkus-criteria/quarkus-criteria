@@ -7,9 +7,8 @@
     <version>1.0.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Quarkus Criteria Extension</name>
-
     <description>Enables type safe and fluent criteria API for Quarkus applications</description>
-
+    <url>https://github.com/quarkus-criteria/quarkus-criteria</url>
     <developers>
         <developer>
             <name>Rafael M. Pestano</name>
@@ -61,6 +60,13 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <distributionManagement>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
 
     <profiles>
         <profile>

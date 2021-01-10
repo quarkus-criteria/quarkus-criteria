@@ -53,7 +53,6 @@ jobs:
             ${{ runner.os }}-maven-
       - name: Coverage report
         run: mvn coveralls:report -DCOVERAGE_TOKEN=${{ secrets.COVERAGE_TOKEN }} -Pcoverage
-
   native:
     name: Native tests
     runs-on: ubuntu-18.04
@@ -74,3 +73,21 @@ jobs:
         run: docker pull quay.io/quarkus/ubi-quarkus-native-image:20.3.0-java11
       - name: Run integration tests in native
         run: mvn install -DskipTests && mvn verify -f system-tests/pom.xml -Ddocker -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-native-image:20.3.0-java11 -Pnative
+  deploy:
+    name: Deploy snapshots
+    runs-on: ubuntu-18.04
+    needs: native
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up JDK
+        uses: actions/setup-java@v1
+        with:
+          java-version: 11.0.4
+      - uses: actions/cache@v1
+        with:
+          path: ~/.m2/repository
+          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          restore-keys: |
+            ${{ runner.os }}-maven-
+      - name: Deploy snapshots
+        run: mvn deploy -Prelease --settings settings.xml -DMAVEN.USER=${{secrets.MAVEN_USER}} -DMAVEN.USER=${{secrets.MAVEN_PASS}}
