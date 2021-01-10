@@ -45,6 +45,7 @@ public class ExampleBuilder<T extends PersistenceEntity> {
         private T example;
         private boolean hasRestrictions;
         private ExampleBuilder<T> exampleBuilder;
+        private final List<Class<?>> visitedEntities = new ArrayList<>();
 
         public ExampleBuilderDsl(T example, ExampleBuilder exampleBuilder) {
             this.exampleBuilder = exampleBuilder;
@@ -74,10 +75,7 @@ public class ExampleBuilder<T extends PersistenceEntity> {
         }
 
         /**
-         * A criteria will be created using the example entity and provided attributes to restrict the query.
-         * It will use <code>eq</code> for comparing non association attributes.
-         * For <code>oneToOne</code> associations the entity PK will be compared and for toMany association an <code>in</code>
-         * for comparing associated entities PKs.
+         * A criteria will be created using the example entity and provided attributes using <code>EQ</code> operation to restrict the query.
          *
          * @param usingAttributes attributes from example entity to consider. If no attribute is provided then non null attributes will be used.
          */
@@ -85,19 +83,6 @@ public class ExampleBuilder<T extends PersistenceEntity> {
             return usingAttributes(ComparisonOperation.EQ, usingAttributes);
         }
 
-        /**
-         * A criteria will be created using the example entity and provided attributes to restrict the query.
-         * It will use <code>eq</code> for comparing non association attributes.
-         * For <code>oneToOne</code> associations the entity PK will be compared and for toMany association an <code>in</code>
-         * for comparing associated entities PKs.
-         * <p>
-         * Associations will be fetched in result mapping.
-         *
-         * @param usingAttributes attributes from example entity to consider. If no attribute is provided then non null attributes will be used.
-         */
-        public ExampleBuilderDsl usingAttributesAndFetch(final Attribute<T, ?>... usingAttributes) {
-            return usingAttributesAndFetch(ComparisonOperation.EQ, usingAttributes);
-        }
 
         /**
          * A criteria will be created using the example entity and provided attributes to restrict the query.
@@ -108,25 +93,11 @@ public class ExampleBuilder<T extends PersistenceEntity> {
          * @param usingAttributes     attributes from example entity to consider. If no attribute is provided then non null attributes will be used.
          */
         public ExampleBuilderDsl usingAttributes(ComparisonOperation comparisonOperation, Attribute<T, ?>... usingAttributes) {
-            return addExampleRestrictions(comparisonOperation, usingAttributes, false);
+            return addExampleRestrictions(comparisonOperation, usingAttributes);
         }
 
-        /**
-         * A criteria will be created using the example entity and provided attributes to restrict the query.
-         * It will use comparisonOperation for comparing non association attributes.
-         * For <code>oneToOne</code> associations the entity PK will be compared and for toMany association an <code>in</code> for comparing associated entities PKs
-         * <p>
-         * Associations will be fetched in result mapping.
-         *
-         * @param comparisonOperation the operation to be used while comparing the attributes.
-         * @param usingAttributes     attributes from example entity to consider. If no attribute is provided then non null attributes will be used.
-         */
-        public ExampleBuilderDsl usingAttributesAndFetch(ComparisonOperation comparisonOperation, Attribute<T, ?>... usingAttributes) {
-            return addExampleRestrictions(comparisonOperation, usingAttributes, true);
-        }
 
-        private ExampleBuilderDsl addExampleRestrictions(ComparisonOperation comparisonOperation, Attribute<T, ?>[] usingAttributes, boolean fetch) {
-            hasRestrictions = true;
+        private ExampleBuilderDsl addExampleRestrictions(ComparisonOperation comparisonOperation, Attribute<T, ?>[] usingAttributes) {
             if (usingAttributes == null || usingAttributes.length == 0) {
                 usingAttributes = exampleAttributes.toArray(new Attribute[0]);
             }
@@ -137,17 +108,17 @@ public class ExampleBuilder<T extends PersistenceEntity> {
                 final Field field = (Field) usingAttribute.getJavaMember();
                 try {
                     if (usingAttribute instanceof SingularAttribute) {
-                        addSingularRestriction(usingAttribute, comparisonOperation, fetch);
+                        addSingularRestriction(usingAttribute, comparisonOperation);
                     } else if (usingAttribute instanceof PluralAttribute) {
                         if (!exampleAttributes.contains(usingAttribute)) {
-                            addAssociationRestriction(usingAttribute, comparisonOperation, fetch);
+                            addAssociationRestriction(usingAttribute, comparisonOperation);
                         } else if (usingAttribute.getJavaMember() instanceof Field) {
                             final Object value = field.get(example);
                             if (value == null || !(value instanceof Collection)) {
                                 LOG.warning(format("Ignoring example attribute %s for entity %s because it's value %s is not a Collection.", usingAttribute.getName(), example.getClass().getName(), value));
                                 continue;
                             }
-                            addPluralRestriction(usingAttribute, (Collection) value, fetch);
+                            addPluralRestriction(usingAttribute, (Collection) value);
                         }
                     }
                 } catch (IllegalAccessException e) {
@@ -157,25 +128,22 @@ public class ExampleBuilder<T extends PersistenceEntity> {
             return this;
         }
 
-        private void addSingularRestriction(final Attribute<T, ?> attribute, ComparisonOperation operation, boolean fetch) {
+        private void addSingularRestriction(final Attribute<T, ?> attribute, ComparisonOperation operation) {
             if (attribute.getJavaMember() instanceof Field) {
-                final Field field = (Field) attribute.getJavaMember();
-                field.setAccessible(true);
                 if (operation == null) {
                     operation = ComparisonOperation.EQ;
                 }
+                if (!exampleAttributes.contains(attribute)) {
+                    addAssociationRestriction(attribute, operation);
+                    return;
+                }
+                final Field field = (Field) attribute.getJavaMember();
+                field.setAccessible(true);
                 try {
-                    if (!exampleAttributes.contains(attribute)) {
-                        addAssociationRestriction(attribute, operation, fetch);
-                        return;
-                    }
                     final Object value = field.get(example);
                     if (value != null || NULL_OPERATIONS.contains(operation)) {
                         LOG.log(Level.DEBUG, format("Adding an %s restriction on attribute %s using value %s.", operation.name(), attribute.getName(), value));
-                        if (fetch) {
-                            criteria.fetch((SingularAttribute) attribute, JoinType.INNER);
-                        }
-                        addRestriction(criteria, (SingularAttribute) attribute, operation, value);
+                        createRestriction(criteria, (SingularAttribute) attribute, operation, value);
                     }
                 } catch (IllegalAccessException e) {
                     LOG.warning(format("Could not get value from field %s of entity %s.", field.getName(), example.getClass().getName()));
@@ -183,7 +151,8 @@ public class ExampleBuilder<T extends PersistenceEntity> {
             }
         }
 
-        private void addRestriction(Criteria criteria, SingularAttribute attribute, ComparisonOperation operation, Object value) {
+        private void createRestriction(Criteria criteria, SingularAttribute attribute, ComparisonOperation operation, Object value) {
+            hasRestrictions = true;
             switch (operation) {
                 case EQ:
                     criteria.eq(attribute, value);
@@ -236,41 +205,75 @@ public class ExampleBuilder<T extends PersistenceEntity> {
             }
         }
 
-        private void addAssociationRestriction(Attribute<T, ?> attribute, ComparisonOperation comparisonOperation, boolean fetch) throws IllegalAccessException {
-            Optional<Attribute<?, ?>> exampleAttributeOptional = exampleAttributes.stream()
-                    .filter(attr -> attr.getJavaType()
-                            .equals(attribute.getJavaMember().getDeclaringClass())).findFirst();
-
-            if (!exampleAttributeOptional.isPresent()) {
-                throw new IllegalArgumentException(format("Attribute %s or attribute type %s not found in example entity %s.",
+        private void addAssociationRestriction(Attribute attribute, ComparisonOperation operation) {
+            try {
+                visitedEntities.clear();
+                addAssociationRestrictionRecursion(example, criteria, exampleAttributes, attribute, operation, new HashSet<>());
+            } catch (Exception e) {
+                LOG.warning(format("Attribute %s or attribute type %s not found in example entity %s.",
                         attribute.getName(), attribute.getJavaMember().getDeclaringClass(), example.getClass().getName()));
             }
 
-            final Attribute<?, ?> exampleAttribute = exampleAttributeOptional.get();
-            final Field exampleField = (Field) exampleAttribute.getJavaMember();
-            exampleField.setAccessible(true);
-            final Field associationField = (Field) attribute.getJavaMember();
-            associationField.setAccessible(true);
-            final Object value = exampleField.get(example);
-            if (exampleAttribute.isCollection()) {
-                if (value == null || !(value instanceof Collection)) {
-                    LOG.warning(format("Ignoring example attribute %s for entity %s because it's value %s is not a Collection.", attribute.getName(), example.getClass().getName(), value));
-                }
-                addPluralRestriction(attribute, (Collection) value, fetch);
+        }
+
+        private void addAssociationRestrictionRecursion(Object exampleValue, Criteria<?, ?> criteria, Set<Attribute<?, ?>> exampleAttributes, Attribute attribute, ComparisonOperation operation, Set<JoinInfo> joinInfoList) throws IllegalAccessException {
+            Optional<Attribute<?, ?>> exampleAttributeOptional = exampleAttributes.stream()
+                    .filter(exampleAttribute -> exampleAttribute.equals(attribute))
+                    .findFirst();
+            if (!exampleAttributeOptional.isPresent()) { //attr not found, search into entity associations
+                exampleAttributes.stream()
+                        .filter(Attribute::isAssociation)
+                        .forEach(attr -> {
+                            try {
+                                final boolean isCollection = attr.isCollection();
+                                Class<?> attrType = isCollection ? ((PluralAttribute) attr).getElementType().getJavaType() : attr.getJavaType();
+                                if (!visitedEntities.contains(attrType)) {
+                                    Set<Attribute<?, ?>> attrEntityAttributes = (Set<Attribute<?, ?>>) exampleBuilder.entityManager.getMetamodel().entity(attrType).getAttributes();
+                                    visitedEntities.add(attrType);
+                                    Field field = (Field) attr.getJavaMember();
+                                    field.setAccessible(true);
+                                    Object associationValue = null;
+                                    if (isCollection) {
+                                        Collection collection = (Collection) field.get(exampleValue);
+                                        if (!collection.isEmpty()) {
+                                            associationValue = collection.iterator().next();
+                                        }
+                                    } else {
+                                        associationValue = field.get(exampleValue);
+                                    }
+                                    if (associationValue != null) {
+                                        final Criteria associationJoin = new QueryCriteria(attrType, attrType, exampleBuilder.entityManager);
+                                        joinInfoList.add(new JoinInfo(attr, criteria, associationJoin));
+                                        addAssociationRestrictionRecursion(associationValue, associationJoin, attrEntityAttributes, attribute, operation, joinInfoList);
+                                    }
+                                }
+                            } catch (IllegalAccessException e) {
+                            }
+                        });
             } else {
-                if (value != null || NULL_OPERATIONS.contains(comparisonOperation)) {
-                    final Criteria joinCriteria = new QueryCriteria(exampleAttribute.getJavaType(),
-                            exampleAttribute.getJavaType(), exampleBuilder.entityManager);
-                    addRestriction(joinCriteria, (SingularAttribute) attribute, comparisonOperation, associationField.get(exampleField.get(example)));
-                    if (fetch) {
-                        criteria.fetch((SingularAttribute) exampleAttribute);
-                    }
-                    criteria.join((SingularAttribute) exampleAttribute, joinCriteria);
+                if (exampleValue != null || NULL_OPERATIONS.contains(operation)) {
+                    joinInfoList.stream()
+                            .forEach(joinInfo -> addJoin(joinInfo.attribute, joinInfo.criteria, joinInfo.joinCriteria));
+                    Field attrField = (Field) attribute.getJavaMember();
+                    attrField.setAccessible(true);
+                    Object attrValue = attrField.get(exampleValue);
+                    createRestriction(criteria, (SingularAttribute) attribute, operation, attrValue);
+                    return;
                 }
+            }
+
+        }
+
+        private void addJoin(Attribute exampleAttribute, Criteria criteria, Criteria joinCriteria) {
+            final boolean isCollection = exampleAttribute instanceof PluralAttribute;
+            if (isCollection) {
+                addPluralJoin(criteria, (PluralAttribute<T, ?, ?>) exampleAttribute, joinCriteria);
+            } else {
+                criteria.join((SingularAttribute) exampleAttribute, joinCriteria);
             }
         }
 
-        private void addPluralRestriction(final Attribute<T, ?> attribute, final Collection values, boolean fetch) {
+        private void addPluralRestriction(final Attribute<T, ?> attribute, final Collection values) {
             if (values == null || values.isEmpty()) {
                 LOG.warning(format("Ignoring example attribute %s for entity %s because it's value is null", attribute.getName(), example.getClass().getName()));
                 return;
@@ -288,28 +291,57 @@ public class ExampleBuilder<T extends PersistenceEntity> {
                 for (PersistenceEntity persistenceEntity : association) {
                     ids.add(persistenceEntity.getId());
                 }
-                if (fetch) {
-                    criteria.fetch(listAttribute, JoinType.LEFT);
-                }
-                if (listAttribute instanceof ListAttribute) {
-                    criteria.join((ListAttribute) listAttribute, joinCriteria);
-                } else if (listAttribute instanceof SetAttribute) {
-                    criteria.join((SetAttribute) listAttribute, joinCriteria);
-                } else if (listAttribute instanceof MapAttribute) {
-                    criteria.join((MapAttribute) listAttribute, joinCriteria);
-                } else if (listAttribute instanceof CollectionAttribute) {
-                    criteria.join((CollectionAttribute) listAttribute, joinCriteria);
-                }
+                addPluralJoin(criteria, listAttribute, joinCriteria);
                 joinCriteria.in(id, ids);
+            }
+        }
+
+        private void addPluralJoin(Criteria criteria, PluralAttribute<T, ?, ?> listAttribute, Criteria joinCriteria) {
+            if (listAttribute instanceof ListAttribute) {
+                criteria.join((ListAttribute) listAttribute, joinCriteria);
+            } else if (listAttribute instanceof SetAttribute) {
+                criteria.join((SetAttribute) listAttribute, joinCriteria);
+            } else if (listAttribute instanceof MapAttribute) {
+                criteria.join((MapAttribute) listAttribute, joinCriteria);
+            } else if (listAttribute instanceof CollectionAttribute) {
+                criteria.join((CollectionAttribute) listAttribute, joinCriteria);
             }
         }
 
         private Set<Attribute<?, ?>> resolveExampleEntityAttributes() {
             Set<Attribute<?, ?>> attributes = (Set<Attribute<?, ?>>) exampleBuilder.entityManager.getMetamodel().entity(example.getClass()).getAttributes();
             if (attributes == null) {
+                LOG.warning(format("No attributes found on entity %s", example.getClass().getName()));
                 attributes = Collections.emptySet();
             }
             return attributes;
+        }
+
+        private class JoinInfo {
+            private Attribute attribute;
+            private Criteria criteria;
+            private Criteria joinCriteria;
+
+            public JoinInfo(Attribute attribute, Criteria criteria, Criteria joinCriteria) {
+                this.attribute = attribute;
+                this.criteria = criteria;
+                this.joinCriteria = joinCriteria;
+            }
+
+            @Override
+            public boolean equals(Object o) {
+                if (this == o) return true;
+                if (o == null || getClass() != o.getClass()) return false;
+                JoinInfo joinInfo = (JoinInfo) o;
+                return Objects.equals(attribute, joinInfo.attribute) &&
+                        Objects.equals(criteria, joinInfo.criteria) &&
+                        Objects.equals(joinCriteria, joinInfo.joinCriteria);
+            }
+
+            @Override
+            public int hashCode() {
+                return Objects.hash(attribute, criteria, joinCriteria);
+            }
         }
     }
 

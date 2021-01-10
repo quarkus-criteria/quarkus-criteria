@@ -158,8 +158,8 @@ car_sales_point:
                 .usingCriteria(carSalesPointCrud.criteria()
                         .distinct()
                         .orderAsc(CarSalesPoint_.carSalesPointId))
-                .usingAttributesAndFetch(CarSalesPoint_.salesPoint)
-                        .build()
+                .usingAttributes(CarSalesPoint_.salesPoint)
+                        .build().fetch(CarSalesPoint_.salesPoint)
                 .getResultList();
     }
 

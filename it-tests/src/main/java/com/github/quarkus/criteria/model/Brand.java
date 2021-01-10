@@ -55,8 +55,9 @@ public class Brand extends BaseEntity {
         return cars;
     }
 
-    public void setCars(Set<Car> cars) {
+    public Brand setCars(Set<Car> cars) {
         this.cars = cars;
+        return this;
     }
 
     @Override

@@ -13,8 +13,10 @@ import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.Test;
 
 import javax.inject.Inject;
+import javax.persistence.criteria.JoinType;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 import static com.github.quarkus.criteria.runtime.model.ComparisonOperation.*;
@@ -127,8 +129,9 @@ public class CriteriaByExampleIt {
         CarSalesPoint carSalesPointExample = new CarSalesPoint(new Car(), salesPoint);
         List<CarSalesPoint> carSalesPointsFound = carSalesPointCrud
                 .exampleBuilder.of(carSalesPointExample)
-                .usingAttributesAndFetch(CarSalesPoint_.salesPoint)
+                .usingAttributes(CarSalesPoint_.salesPoint)
                 .build()
+                .fetch(CarSalesPoint_.salesPoint)
                 .getResultList();
         assertThat(carSalesPointsFound).isNotNull().hasSize(1);
         assertThat(carSalesPointsFound.get(0).getCar())
@@ -138,7 +141,7 @@ public class CriteriaByExampleIt {
 
     @Test
     @DataSet("cars-full.yml")
-    public void shouldFindCarByBrandAndPriceExampleCriteria() {
+    public void shouldFindCarByBrandAndPrice() {
         Car carExample = new Car().setModel("SE")
                 .setPrice(12.999);
         Brand brand = new Brand(2L);
@@ -154,12 +157,10 @@ public class CriteriaByExampleIt {
 
         assertThat(carService.count(criteriaByExample).intValue()).isEqualTo(1);
 
-
         List<Car> carsFound = carService
                 .exampleBuilder.of(carExample)
                 .usingCriteria(criteriaByExample)
-                .usingAttributesAndFetch(Car_.brand)
-                .build()
+                .build().fetch(Car_.brand)
                 .getResultList();
         assertThat(carsFound).isNotNull().hasSize(1)
                 .extracting("name")
@@ -170,15 +171,16 @@ public class CriteriaByExampleIt {
 
     @Test
     @DataSet("cars-full.yml")
-    public void shouldFindCarByBrandNameExampleCriteria() {
+    public void shouldFindCarByBrandName() {
         Brand brand = new Brand().setName("niss%");
         Car carExample = new Car().setBrand(brand);
         carExample.setBrand(brand);//brand = Nissan
 
         List<Car> carsFound = carService
                 .exampleBuilder.of(carExample)
-                .usingAttributesAndFetch(LIKE_IGNORE_CASE, Brand_.name)
+                .usingAttributes(LIKE_IGNORE_CASE, Brand_.name)
                 .build()
+                .fetch(Car_.brand) //bring brand association into result list
                 .getResultList();
 
         assertThat(carsFound).isNotNull().hasSize(1)
@@ -189,15 +191,15 @@ public class CriteriaByExampleIt {
 
     @Test
     @DataSet("cars-full.yml")
-    public void shouldFindCarsBySalesPointAddressExampleCriteria() {
-        SalesPoint salesPoint = new SalesPoint().setAddress("Tesla HQ address");
+    public void shouldFindCarsBySalesPointId() {
+        SalesPoint salesPoint = new SalesPoint().setSalesPointPK(new SalesPointPK(1L, 5L));
         CarSalesPoint carSalesPointExample = new CarSalesPoint().setSalesPoint(salesPoint);
 
         List<CarSalesPoint> carSalesPointsFound = carSalesPointCrud
                 .exampleBuilder.of(carSalesPointExample)
                 .usingCriteria(carSalesPointCrud.criteria().distinct())
-                .usingAttributesAndFetch(SalesPoint_.address)
-                .build()
+                .usingAttributes(CarSalesPoint_.salesPoint)
+                .build().fetch(CarSalesPoint_.salesPoint)
                 .getResultList();
         assertThat(carSalesPointsFound).isNotNull().hasSize(2);
         List<Car> carsFound = carSalesPointsFound.stream()
@@ -210,15 +212,16 @@ public class CriteriaByExampleIt {
 
     @Test
     @DataSet("cars-full.yml")
-    public void shouldFindCarsBySalesPointIdExampleCriteria() {
-        SalesPoint salesPoint = new SalesPoint().setSalesPointPK(new SalesPointPK(1L, 5L));
+    public void shouldFindCarsBySalesPointAddress() {
+        SalesPoint salesPoint = new SalesPoint().setAddress("Tesla HQ address");
         CarSalesPoint carSalesPointExample = new CarSalesPoint().setSalesPoint(salesPoint);
 
         List<CarSalesPoint> carSalesPointsFound = carSalesPointCrud
                 .exampleBuilder.of(carSalesPointExample)
-                .usingCriteria(carSalesPointCrud.criteria().distinct())
-                .usingAttributesAndFetch(CarSalesPoint_.salesPoint)
+                .usingAttributes(SalesPoint_.address)
                 .build()
+                .distinct()
+                .fetch(CarSalesPoint_.salesPoint)
                 .getResultList();
         assertThat(carSalesPointsFound).isNotNull().hasSize(2);
         List<Car> carsFound = carSalesPointsFound.stream()
@@ -227,6 +230,60 @@ public class CriteriaByExampleIt {
         assertThat(carsFound).isNotNull().hasSize(2)
                 .extracting("name")
                 .contains("Model S", "Model X");
+    }
+
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldFindSalesPointOfGivenCarBrand() {
+        Car car = new Car().setBrand(new Brand().setName("tesla"));
+        CarSalesPoint carSalesPointExample = new CarSalesPoint().setCar(car);
+        Criteria build = carSalesPointCrud
+                .exampleBuilder.of(carSalesPointExample)
+                .usingCriteria(carSalesPointCrud.criteria()
+                        .distinct()
+                        .fetch(CarSalesPoint_.salesPoint)
+                )
+                .usingAttributes(EQ_IGNORE_CASE, Brand_.name)
+                .build();
+        List<CarSalesPoint> carSalesPointsFound = build.getResultList();
+        assertThat(carSalesPointsFound).isNotNull().hasSize(2)
+                .extracting(carSalesPoint1 -> carSalesPoint1.getCar().getName())
+                .contains("Model S", "Model X");
+    }
+
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldListBrandsByCarPrice() {
+        Car car = new Car().setPrice(10.000);
+        Brand brandExample = new Brand()
+                .setCars(Set.of(car));
+        List<Brand> brands = brandCrud.exampleBuilder
+                .of(brandExample)
+                .usingAttributes(GT, Car_.price)
+                .build()
+                .getResultList();
+        assertThat(brands).isNotNull().hasSize(2)
+                .extracting(brand -> brand.getName())
+                .contains("Ford", "Nissan");
+    }
+
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldListBrandsBySalesPointAddress() {
+        SalesPoint salesPoint = new SalesPoint()
+                .setAddress("Tesla HQ address");
+        Set<Car> cars = Set.of(new Car().addSalesPoint(salesPoint));
+        Brand brandExample = new Brand().setCars(cars);
+
+        List<Brand> brands = brandCrud.exampleBuilder
+                .of(brandExample)
+                .usingAttributes(EQ, SalesPoint_.address)
+                .build()
+                .distinct()
+                .getResultList();
+        assertThat(brands).isNotNull().hasSize(1)
+                .extracting(brand -> brand.getName())
+                .contains("Tesla");
     }
 
     @Test
@@ -271,7 +328,8 @@ public class CriteriaByExampleIt {
                 .usingCriteria(carSalesPointCrud.criteria()
                         .distinct()
                         .orderAsc(CarSalesPoint_.carSalesPointId))
-                .usingAttributesAndFetch(CarSalesPoint_.salesPoint).build()
+                .usingAttributes(CarSalesPoint_.salesPoint)
+                .build().fetch(CarSalesPoint_.salesPoint)
                 .getResultList();
 
         assertThat(resultList)
@@ -319,8 +377,9 @@ public class CriteriaByExampleIt {
 
         List<Car> carsFound = carService.exampleBuilder
                 .of(new Car().setBrand(tesla))
-                .usingAttributesAndFetch()
-                .build().getResultList();
+                .usingAttributes()
+                .build()
+                .getResultList();
         assertThat(carsFound).isNotNull().hasSize(2)
                 .extracting("name")
                 .contains("Model S", "Model X");
@@ -328,8 +387,9 @@ public class CriteriaByExampleIt {
         tesla.setCars(new HashSet<>(carsFound));
         List<Brand> brands = brandCrud.exampleBuilder
                 .of(tesla)
-                .usingAttributesAndFetch(Brand_.cars)
-                .build().distinct()
+                .usingAttributes(Brand_.cars)
+                .build().fetch(Brand_.cars)
+                .distinct()
                 .getResultList();
 
         assertThat(brands).isNotNull().hasSize(1)

@@ -174,9 +174,4 @@ public class CarService extends CrudService<Car> implements Serializable {
     }
 
 
-    public List<Car> findByBrand(Brand brand) {
-        return criteria()
-             .eq(Car_.brand, brand)
-             .getResultList();
-    }
 }

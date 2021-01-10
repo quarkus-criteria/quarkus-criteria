@@ -6,13 +6,13 @@ import com.github.database.rider.core.configuration.DataSetConfig;
 import com.github.database.rider.core.dsl.RiderDSL;
 import com.github.quarkus.criteria.model.*;
 import com.github.quarkus.criteria.runtime.model.Filter;
-import com.github.quarkus.criteria.runtime.model.MultiSort;
 import com.github.quarkus.criteria.runtime.model.SortType;
 import com.github.quarkus.criteria.runtime.service.CrudService;
 import com.github.quarkus.criteria.runtime.service.Service;
 import com.github.quarkus.criteria.service.CarService;
 import io.quarkus.test.junit.QuarkusTest;
 import org.junit.jupiter.api.Test;
+
 import javax.inject.Inject;
 import javax.sql.DataSource;
 import java.sql.SQLException;
@@ -41,6 +41,10 @@ public class CrudServiceIt {
     @Inject
     @Service
     CrudService<SalesPoint> salesPointCrud;
+
+    @Inject
+    @Service
+    CrudService<CarSalesPoint> carSalesPointCrud;
 
     @Inject
     @Service
@@ -373,15 +377,34 @@ public class CrudServiceIt {
 
     @Test
     @DataSet("cars-full.yml")
+    public void shouldListCarsByBrandName() {
+        List<Car> carsFound = carService.criteria()
+                .fetch(Car_.brand)
+                .join(Car_.brand, carService.where(Brand.class)
+                    .eqIgnoreCase(Brand_.name, "tesla"))
+                .getResultList();
+
+        assertThat(carsFound).isNotNull().hasSize(2)
+                .extracting("name")
+                .contains("Model S", "Model X");
+
+    }
+
+    @Test
+    @DataSet("cars-full.yml")
     public void shouldListCarsOfSpecificBrand() {
         Brand tesla = brandCrud.criteria()
                 .eq(Brand_.name, "Tesla")
                 .getSingleResult();
 
-        List<Car> carsFound = carService.findByBrand(tesla);
+        List<Car> carsFound = carService.criteria()
+                .eq(Car_.brand, tesla)
+                .getResultList();
+
         assertThat(carsFound).isNotNull().hasSize(2)
                 .extracting("name")
                 .contains("Model S", "Model X");
+
 
         List<Brand> brands = brandCrud.criteria()
                 .distinct()
@@ -393,6 +416,7 @@ public class CrudServiceIt {
                 .extracting("name")
                 .contains("Tesla");
     }
+
 
     @Test
     @DataSet("cars-full.yml")
@@ -410,6 +434,50 @@ public class CrudServiceIt {
         assertThat(carsFound).isNotNull().hasSize(1)
                 .extracting("name")
                 .contains("Sentra");
+    }
+
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldFindSalesPointOfGivenCarBrand() {
+        List<CarSalesPoint> carSalesPoint = carSalesPointCrud
+                .criteria()
+                .distinct()
+                .fetch(CarSalesPoint_.salesPoint)
+                .join(CarSalesPoint_.car, carSalesPointCrud.where(Car.class)
+                        .join(Car_.brand, carSalesPointCrud.where(Brand.class)
+                                .eq(Brand_.name, "Tesla")))
+                .getResultList();
+
+        assertThat(carSalesPoint).isNotNull().hasSize(2)
+                .extracting(carSalesPoint1 -> carSalesPoint1.getCar().getName())
+                .contains("Model S", "Model X");
+    }
+
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldListBrandsByCarPrice() {
+        List<Brand> brands = brandCrud.criteria()
+                .join(Brand_.cars, brandCrud.where(Car.class)
+                        .gt(Car_.price, 10.000D))
+                .getResultList();
+        assertThat(brands).isNotNull().hasSize(2)
+                .extracting(brand -> brand.getName())
+                .contains("Ford", "Nissan");
+    }
+
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldListBrandsBySalesPointAddress() {
+        List<Brand> brands = brandCrud.criteria().distinct()
+                .join(Brand_.cars, brandCrud.where(Car.class)
+                        .join(Car_.carSalesPoints, brandCrud.where(CarSalesPoint.class)
+                             .join(CarSalesPoint_.salesPoint, brandCrud.where(SalesPoint.class)
+                                .eq(SalesPoint_.address, "Tesla HQ address")))
+                      )
+                .getResultList();
+        assertThat(brands).isNotNull().hasSize(1)
+                .extracting(brand -> brand.getName())
+                .contains("Tesla");
     }
 
     @Test

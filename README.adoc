@@ -103,58 +103,120 @@ TIP: See https://docs.jboss.org/hibernate/orm/5.0/topical/html/metamodelgen/Meta
 
 * Now you're ready to use https://deltaspike.apache.org/documentation/data.html#JPACriteriaAPISupport[DeltaSpike type safe fluent criteria API] on your Quarkus application
 
+For examples below consider the following entities:
+
+image::entities[]
 
 === Examples
 
 The easiest way to use quarkus criteria is via *generic injection* of `CrudService`:
+
 
 [source, java]
 ----
 @Inject
 @Service
 CrudService<Car> crudService;
+----
 
-//list all cars
-crudService.criteria().getResultList()
-// a type safe criteria example
-crudService.criteria()
+Below are some example criteria you can create:
+
+* List cars by brand name:
+
+[source, java]
+----
+List<Car> carsFound = crudService.criteria()
+        .fetch(Car_.brand)
+        .join(Car_.brand, crudService.where(Brand.class)
+            .eqIgnoreCase(Brand_.name, "tesla"))
+        .getResultList();
+
+assertThat(carsFound).isNotNull().hasSize(2)
+        .extracting("name")
+        .contains("Model S", "Model X");
+----
+
+* List brands by sales point address:
+
+[source, java]
+----
+@Inject
+CrudService<Brand> brandCrud;
+
+List<Brand> brands = brandCrud.criteria().distinct()
+        .join(Brand_.cars, brandCrud.where(Car.class)
+                .join(Car_.carSalesPoints, brandCrud.where(CarSalesPoint.class)
+                     .join(CarSalesPoint_.salesPoint, brandCrud.where(SalesPoint.class)
+                        .eq(SalesPoint_.address, "Tesla HQ address")))
+              )
+        .getResultList();
+assertThat(brands).isNotNull().hasSize(1)
+        .extracting(brand -> brand.getName())
+        .contains("Tesla");
+----
+
+
+* List cars by model, brand name and sales point address:
+
+[source, java]
+----
+List<Car> result = rudService.criteria()
    .distinct()
    .fetch(Car_.carSalesPoints, JoinType.LEFT) // fetches salesPoint list in result
    .fetch(Car_.brand)
    .join(Car_.brand, where(Brand.class)
         .or(crudService.criteria(Brand.class).eq(Brand_.name, "Nissan"), //by brand name
            crudService.criteria(Brand.class).eq(Brand_.name, "Ford")))
-   .join(Car_.carSalesPoints, crudService.criteria().where(CarSalesPoint.class, JoinType.LEFT)  //by toMany association property (address)
-        .join(CarSalesPoint_.salesPoint, crudService.criteria().where(SalesPoint.class, JoinType.LEFT) // car -> carSalesPoint -> salesPoint.address
+   .join(Car_.carSalesPoints, crudService.where(CarSalesPoint.class, JoinType.LEFT)  //by toMany association property (address)
+        .join(CarSalesPoint_.salesPoint, crudService.where(SalesPoint.class, JoinType.LEFT) // car -> carSalesPoint -> salesPoint.address
                 .eqIgnoreCase(SalesPoint_.address, "ford motors address")))
    .or(criteria().likeIgnoreCase(Car_.model, "%tanium"),
                  crudService.criteria().eq(Car_.name, "Sentra"))
    .getResultList();
 
-// aggregation function
+----
+
+* Aggregation function
+
+[source, java]
+----
 Double result = criteria()
     .select(Double.class, sum(Car_.price))
     .likeIgnoreCase(Car_.model, model)
     .getSingleResult();
+----
 
-// count by criteria
+* Count by criteria
+
+[source, java]
+----
 long count = crudService.count(crudService.criteria()
             .likeIgnoreCase(Car_.model, "%porche%")
             .gtOrEq(Car_.price, 10000D));
+----
 
-// insert
+* Insert
+
+[source, java]
+----
 List.of(new Brand().setName("Nissan"),
         new Brand().setName("Ford"),
         new Brand().setName("Tesla"))
           .forEach(brandCrud::insert);
 
-// delete in batches
+----
+
+* Delete in batches
+
+[source, java]
+----
 int deleted = crudService.removeBatch(crudService.criteria().getResultList(), 5);
 assertThat(deleted).isEqualTo(10);
 assertThat(crudService.count()).isEqualTo(0L);
-
 ----
 
+[TIP]
+====
 You can also inherit from CrudService, this way you can invoke `where`, `criteria()` and other methods directly from superclass instead of calling them via crudService instance:
 
 [source, java]
@@ -177,7 +239,51 @@ public class CarService extends CrudService<Car> implements Serializable {
 ----
 <1> Select fields and target DTO to map results
 
-TIP: More examples in https://github.com/quarkus-criteria/quarkus-criteria/blob/master/it-tests/src/test/java/com/github/quarkus/criteria/CrudServiceIt.java#L31[integration tests^] or in https://github.com/quarkus-criteria/quarkus-criteria/blob/master/it-tests/src/main/java/com/github/quarkus/criteria/QuarkusCriteriaApp.java#L37[sample app^].
+====
+
+* Pagination
+
+[source, java]
+----
+    /**
+     * curl -X GET http://localhost:8080/api/cars -v
+     */
+    @GET
+    @Produces(MediaType.APPLICATION_JSON)
+    public Response list(@QueryParam("first") @DefaultValue("0") Integer startPosition,
+                         @QueryParam("pageSize") @DefaultValue("10") Integer maxResult,
+                         @QueryParam("sortField") @DefaultValue("id") String sortField,
+                         @QueryParam("sortField") @DefaultValue("ASCENDING") SortType sortType,
+                         @QueryParam("name") @DefaultValue("") String name,
+                         @QueryParam("model") @DefaultValue("") String model,
+                         @QueryParam("price") Double price,
+                         @QueryParam("brandId") Long brandId
+                         ) {
+
+        Filter<Car> carFilter = new Filter<>(new Car().setName(name)
+                .setModel(model)
+                .setPrice(price))
+                .setFirst(startPosition)
+                .setPageSize(maxResult)
+                .setSortType(sortType)
+                .setSortField(sortField);
+        if(brandId != null) {
+            carFilter.getEntity().setBrand(new Brand(brandId));
+        }
+
+        return ok(carService.paginate(carFilter)).build();
+    }
+----
+TIP: `paginate` method will use `filter` to get pagination information and also call *configPagination* on your service so you can add restrictions or fetch additional fields, see https://github.com/quarkus-criteria/quarkus-criteria/blob/master/system-tests/src/main/java/com/github/quarkus/criteria/service/CarService.java#L28-L67[CarService for example^].
+
+
+[TIP]
+====
+For more examples see:
+
+* https://github.com/quarkus-criteria/quarkus-criteria/blob/master/it-tests/src/test/java/com/github/quarkus/criteria/CrudServiceIt.java#L28[Integration tests^]
+* https://github.com/quarkus-criteria/quarkus-criteria/blob/master/system-tests/src/test/java/com/github/quarkus/criteria/CarRestIt.java#L26[System tests]
+====
 
 
 ==== BaseCriteriaSupport
