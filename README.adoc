@@ -105,7 +105,7 @@ TIP: See https://docs.jboss.org/hibernate/orm/5.0/topical/html/metamodelgen/Meta
 
 For examples below consider the following entities:
 
-image::entities[]
+image::entities.png[]
 
 === Examples
 
@@ -317,41 +317,57 @@ You can query by example using `exampleBuilder`:
 ----
  Car carExample = new Car().model("Ferrari");
  List<Car> cars = carService
-      .exampleBuilder.of(carExample)
+      .exampleBuilder.of(carExample, ComparisonOperation)
       .usingAttributes(Car_.model).build() <1>
       .getResultList();
 
 ----
 <1> select which attributes to consider from example entity, if no attribute is provided then non null properties from example entity  will be considered.
 
-A bit more complex example:
+You can also choice the https://github.com/quarkus-criteria/quarkus-criteria/blob/master/runtime/src/main/java/com/github/quarkus/criteria/runtime/model/ComparisonOperation.java[comparison operarion^] to be used when comparing example attribute value:
 
 [source, java]
 ----
-SalesPoint salesPoint = carService.criteria(SalesPoint.class)
-                .like(SalesPoint_.name, "Nissan%")
-                .getSingleResult();
-CarSalesPoint carSalesPoint = new CarSalesPoint(new Car(), salesPoint);
-List<CarSalesPoint> resultList = carSalesPointCrud
-        .exampleBuilder.of(carSalesPoint)
-        .usingCriteria(carSalesPointCrud.criteria()
-                .distinct()
-                .orderAsc(CarSalesPoint_.carSalesPointId))
-        .usingAttributesAndFetch(CarSalesPoint_.salesPoint).build()
+Car carExample = new Car().setModel("%rrari");
+List<Car> cars = carService
+        .exampleBuilder.of(carExample)
+        .usingAttributes(ComparisonOperation.LIKE_IGNORE_CASE, Car_.model).build()
         .getResultList();
+----
 
-assertThat(resultList)
-        .isNotNull()
-        .hasSize(1);
-Car carFound = resultList.get(0).getCar();
-assertThat(carFound)
-        .extracting("id", "name")
-        .contains(2, "Sentra");
-List<CarSalesPoint> carSalesPointFound = carFound.getCarSalesPoints();
-assertThat(carSalesPointFound).hasSize(1);
-assertThat(carSalesPointFound.get(0).getSalesPoint())
+If no comparisonOperation is provided then `EQ` will be used.
+
+[source, java]
+----
+ Car carExample = new Car().model("Ferrari");
+ List<Car> cars = carService
+      .exampleBuilder.of(carExample, ComparisonOperation)
+      .usingAttributes(Car_.model).build() <1>
+      .getResultList();
+
+----
+
+Find cars by sales point address example:
+
+[source, java]
+----
+SalesPoint salesPoint = new SalesPoint().setAddress("Tesla HQ address");
+CarSalesPoint carSalesPointExample = new CarSalesPoint().setSalesPoint(salesPoint);
+
+List<CarSalesPoint> carSalesPointsFound = carSalesPointCrud
+        .exampleBuilder.of(carSalesPointExample)
+        .usingAttributes(SalesPoint_.address)
+        .build()
+        .distinct()
+        .fetch(CarSalesPoint_.salesPoint)
+        .getResultList();
+assertThat(carSalesPointsFound).isNotNull().hasSize(2);
+List<Car> carsFound = carSalesPointsFound.stream()
+        .map(carSalesPoint -> carSalesPoint.getCar())
+        .collect(Collectors.toUnmodifiableList());
+assertThat(carsFound).isNotNull().hasSize(2)
         .extracting("name")
-        .contains("Nissan Sales");
+        .contains("Model S", "Model X");
 ----
 TIP: More examples https://github.com/quarkus-criteria/quarkus-criteria/blob/master/it-tests/src/test/java/com/github/quarkus/criteria/CriteriaByExampleIt.java#L27[can be found here].
 

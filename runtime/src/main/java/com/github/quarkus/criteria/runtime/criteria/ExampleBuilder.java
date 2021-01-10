@@ -258,7 +258,6 @@ public class ExampleBuilder<T extends PersistenceEntity> {
                     attrField.setAccessible(true);
                     Object attrValue = attrField.get(exampleValue);
                     createRestriction(criteria, (SingularAttribute) attribute, operation, attrValue);
-                    return;
                 }
             }
 
@@ -329,18 +328,8 @@ public class ExampleBuilder<T extends PersistenceEntity> {
             }
 
             @Override
-            public boolean equals(Object o) {
-                if (this == o) return true;
-                if (o == null || getClass() != o.getClass()) return false;
-                JoinInfo joinInfo = (JoinInfo) o;
-                return Objects.equals(attribute, joinInfo.attribute) &&
-                        Objects.equals(criteria, joinInfo.criteria) &&
-                        Objects.equals(joinCriteria, joinInfo.joinCriteria);
-            }
-
-            @Override
             public int hashCode() {
-                return Objects.hash(attribute, criteria, joinCriteria);
+                return Objects.hash(attribute);
             }
         }
     }

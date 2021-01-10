@@ -44,10 +44,10 @@ public class CriteriaByExampleIt {
     @Test
     @DataSet("cars.yml")
     public void shouldFindCarByExample() {
-        Car carExample = new Car().setModel("Ferrari");
+        Car carExample = new Car().setModel("%rrari");
         List<Car> cars = carService
                 .exampleBuilder.of(carExample)
-                .usingAttributes(Car_.model).build()
+                .usingAttributes(ComparisonOperation.LIKE_IGNORE_CASE, Car_.model).build()
                 .getResultList();
         assertThat(cars).isNotNull()
                 .hasSize(1)
