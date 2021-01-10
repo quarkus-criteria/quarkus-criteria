@@ -390,7 +390,7 @@ Or run via quarkus:dev:
 
 == System tests
 
-System tests are located in `system-tests` module, to run them use maven command:
+System tests are located in `system-tests` module, to run the tests use following maven command:
 
 `mvn test`
 
@@ -408,3 +408,13 @@ To run native tests inside docker (without the need to install GraalVM):
 * Linux
 +
 `mvn verify -Dquarkus.native.container-build=true -Dquarkus.native.builder-image=quay.io/quarkus/ubi-quarkus-native-image:20.3.0-java11 -Pnative`
+
+=== System tests rest application
+
+The system tests example application needs a Postgres database running, use the following docker command to spin up one:
+
+`docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name quarkus_test -e POSTGRES_USER=car -e POSTGRES_PASSWORD=car -e POSTGRES_DB=cars -p 5432:5432 postgres:11.5`
+
+After that just build and start the application:
+
+`cd system-tests && mvn package -DskipTests && java -jar target/quarkus-criteria-st-runner.jar`

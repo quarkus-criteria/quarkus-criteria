@@ -56,8 +56,8 @@ public class CarService extends CrudService<Car> implements Serializable {
             if (filterEntity.hasModel()) {
                 criteria.likeIgnoreCase(Car_.model, "%" + filterEntity.getModel());
             }
-            if (filterEntity.setPrice() != null) {
-                criteria.eq(Car_.price, filterEntity.setPrice());
+            if (filterEntity.getPrice() != null) {
+                criteria.eq(Car_.price, filterEntity.getPrice());
             }
             if (filterEntity.hasName()) {
                 criteria.likeIgnoreCase(Car_.name, "%" + filterEntity.getName() + "%");
@@ -71,6 +71,10 @@ public class CarService extends CrudService<Car> implements Serializable {
     }
 
     public void beforeUpdate(Car car) {
+        if(count(criteria()
+            .eq(Car_.id, car.getId())) == 0) {
+            throw new RuntimeException("Cannot update inexisting car.");
+        }
         validate(car);
     }
 
@@ -81,19 +85,27 @@ public class CarService extends CrudService<Car> implements Serializable {
         if (!car.hasName()) {
             throw new RuntimeException("Car name cannot be empty");
         }
-
-        if (car.setPrice() == null) {
+        if (car.getPrice() == null) {
             throw new RuntimeException("Car price cannot be empty");
         }
-
         if (count(criteria()
                 .eqIgnoreCase(Car_.name, car.getName())
                 .notEq(Car_.id, car.getId())) > 0) {
-
             throw new RuntimeException("Car name must be unique");
         }
     }
 
+
+    @Override
+    public void beforeDelete(Car car) {
+        if(car.getCarSalesPoints() != null && !car.getCarSalesPoints().isEmpty()) {
+            car.getCarSalesPoints()
+                    .stream()
+                    .forEach(carSalesPoint -> entityManager
+                            .remove(entityManager.getReference(CarSalesPoint.class, carSalesPoint.getId())));
+        }
+        super.beforeDelete(car);
+    }
 
     public List<Car> listByModel(String model) {
         return criteria()

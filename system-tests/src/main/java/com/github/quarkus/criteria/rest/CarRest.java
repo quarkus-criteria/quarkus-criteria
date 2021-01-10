@@ -3,20 +3,20 @@ package com.github.quarkus.criteria.rest;
 import com.github.quarkus.criteria.model.*;
 import com.github.quarkus.criteria.runtime.model.Filter;
 import com.github.quarkus.criteria.runtime.model.SortType;
-import com.github.quarkus.criteria.runtime.service.CrudService;
 import com.github.quarkus.criteria.service.CarService;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.persistence.OptimisticLockException;
 import javax.ws.rs.*;
 import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
-
 import java.net.URI;
 import java.util.List;
 
+import static com.github.quarkus.criteria.runtime.util.CriteriaUtils.toListOfIds;
 import static java.util.Optional.ofNullable;
 import static javax.ws.rs.core.Response.*;
 import static javax.ws.rs.core.Response.Status.NOT_FOUND;
@@ -55,7 +55,7 @@ public class CarRest {
                          @QueryParam("model") @DefaultValue("") String model,
                          @QueryParam("price") Double price,
                          @QueryParam("brandId") Long brandId
-                         ) {
+    ) {
 
         Filter<Car> carFilter = new Filter<>(new Car().setName(name)
                 .setModel(model)
@@ -64,7 +64,7 @@ public class CarRest {
                 .setPageSize(maxResult)
                 .setSortType(sortType)
                 .setSortField(sortField);
-        if(brandId != null) {
+        if (brandId != null) {
             carFilter.getEntity().setBrand(new Brand(brandId));
         }
 
@@ -99,7 +99,7 @@ public class CarRest {
 
     @DELETE
     @Path("/{id : \\d+}")
-    public Response delete(@PathParam("id") final Long id) {
+    public Response delete(@PathParam("id") final Integer id) {
         carService.deleteById(id);
         return noContent().build();
     }
@@ -109,6 +109,35 @@ public class CarRest {
     public Response deleteInBatches(List<Car> carsToDelete, @QueryParam("batchSize") @DefaultValue("10") Integer batchSize) {
         carService.deleteBatch(carsToDelete, batchSize);
         return noContent().build();
+    }
+
+    @PUT
+    @Path("/{id:[0-9][0-9]*}")
+    @Consumes("application/json")
+    public Response update(@PathParam("id") Integer id, Car car) {
+        if (car == null) {
+            return Response.status(Status.BAD_REQUEST).entity("Invalid car provided.").build();
+        }
+        if (!id.equals(car.getId())) {
+            return Response.status(Status.CONFLICT).entity(car).build();
+        }
+        if (car.getBrand() != null && car.getBrand().getId() != null) {
+            car.setBrand(carService.criteria(Brand.class)
+                    .eq(Brand_.id, car.getBrand().getId())
+                    .getSingleResult());
+        }
+        if (car.getCarSalesPoints() != null && !car.getCarSalesPoints().isEmpty()) {
+            car.setCarSalesPoints(carService.criteria(CarSalesPoint.class)
+                    .fetch(CarSalesPoint_.salesPoint)
+                    .in(CarSalesPoint_.carSalesPointId, toListOfIds(car.getCarSalesPoints(), new CarSalesPointId[0]))
+                    .getResultList());
+        }
+        try {
+            carService.update(car);
+        } catch (OptimisticLockException e) {
+            return Response.status(Status.CONFLICT).entity(e.getEntity()).build();
+        }
+        return Response.noContent().build();
     }
 }
 

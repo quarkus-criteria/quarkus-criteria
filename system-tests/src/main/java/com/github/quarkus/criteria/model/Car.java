@@ -35,9 +35,8 @@ public class Car extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     private Brand brand;
 
-    @OneToMany(mappedBy = "car", orphanRemoval = true, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "car", fetch = FetchType.LAZY)
     private List<CarSalesPoint> carSalesPoints = new ArrayList<>();
-
 
     @Version
     private Integer version;
@@ -53,10 +52,6 @@ public class Car extends BaseEntity {
         return model;
     }
 
-    public Double setPrice() {
-        return price;
-    }
-
     @Override
     public Integer getId() {
         return id;
@@ -66,12 +61,8 @@ public class Car extends BaseEntity {
         return name;
     }
 
-    public void getModel(String model) {
-        this.model = model;
-    }
-
-    public void getPrice(Double price) {
-        this.price = price;
+    public Double getPrice() {
+        return price;
     }
 
     public Integer getVersion() {
@@ -97,6 +88,11 @@ public class Car extends BaseEntity {
         return this;
     }
 
+    public Car setId(Integer id) {
+        this.id = id;
+        return this;
+    }
+
     public Brand getBrand() {
         return brand;
     }
@@ -113,20 +109,6 @@ public class Car extends BaseEntity {
     public void setCarSalesPoints(List<CarSalesPoint> carSalesPoints) {
         this.carSalesPoints = carSalesPoints;
     }
-
-    public Car setSalesPoints(List<SalesPoint> salesPoints) {
-        salesPoints.stream()
-                .forEach(this::addSalesPoint);
-        return this;
-    }
-
-    public Car addSalesPoint(SalesPoint salesPoint) {
-        CarSalesPoint carSalesPoint = new CarSalesPoint(this, salesPoint);
-        carSalesPoints.add(carSalesPoint);
-        salesPoint.getCars().add(carSalesPoint);
-        return this;
-    }
-
 
     public boolean hasModel() {
         return model != null && !"".equals(model.trim());
