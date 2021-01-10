@@ -160,7 +160,7 @@ assertThat(brands).isNotNull().hasSize(1)
 
 [source, java]
 ----
-List<Car> result = rudService.criteria()
+List<Car> result = crudService.criteria()
    .distinct()
    .fetch(Car_.carSalesPoints, JoinType.LEFT) // fetches salesPoint list in result
    .fetch(Car_.brand)
@@ -301,7 +301,7 @@ public class CarCriteria extends BaseCriteriaSupport<Car> {
      */
     public Double getTotalPriceByModel(String model) {
         return criteria()
-                  .select(Double.class, sum(Car_.price))
+                 .select(Double.class, sum(Car_.price))
                 .likeIgnoreCase(Car_.model, model)
                 .getSingleResult();
     }
@@ -324,7 +324,7 @@ You can query by example using `exampleBuilder`:
 ----
 <1> select which attributes to consider from example entity, if no attribute is provided then non null properties from example entity  will be considered.
 
-You can also choice the https://github.com/quarkus-criteria/quarkus-criteria/blob/master/runtime/src/main/java/com/github/quarkus/criteria/runtime/model/ComparisonOperation.java[comparison operarion^] to be used when comparing example attribute value:
+You can also choice the https://github.com/quarkus-criteria/quarkus-criteria/blob/master/runtime/src/main/java/com/github/quarkus/criteria/runtime/model/ComparisonOperation.java[comparison operation^] to be used when comparing example attribute value:
 
 [source, java]
 ----
