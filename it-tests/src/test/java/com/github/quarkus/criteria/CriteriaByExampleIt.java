@@ -347,6 +347,7 @@ public class CriteriaByExampleIt {
 
         Car carExample = new Car().setModel("SE");
         //will add a restriction by car 'model' using example criteria
+
         Criteria<Car, Car> criteriaByExample = carService
                 .exampleBuilder.of(carExample)
                 .usingCriteria(criteria)
@@ -550,4 +551,22 @@ public class CriteriaByExampleIt {
                 .extracting("name")
                 .contains("Model S", "Model X", "Fusion");
     }
+
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldFindCarByModelUsingNullOperation() {
+        Car carExample = new Car().setModel("S");
+        ComparisonOperation operation = null;
+        Car car = (Car) crudService
+                .exampleBuilder.of(carExample)
+                .usingAttributes(operation, Car_.model)
+                .build()
+                .getSingleResult();
+        assertThat(car).isNotNull()
+                .extracting(c -> c.getName())
+                .contains("Model S");
+    }
+
+
+
 }
