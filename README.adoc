@@ -28,7 +28,7 @@ Enables `type safe` and fluent criteria API for `Quarkus applications` via https
 <dependency>
     <groupId>com.github.quarkus-criteria</groupId>
     <artifactId>quarkus-criteria</artifactId>
-    <version>1.0.0-RC1</version>
+    <version>1.0.0-RC2</version>
 </dependency>
 ----
 
