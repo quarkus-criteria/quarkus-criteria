@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.github.quarkus-criteria</groupId>
         <artifactId>quarkus-criteria-parent</artifactId>
-        <version>1.0.0-RC2</version>
+        <version>1.0.0-RC3-SNAPSHOT</version>
         <relativePath>../</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
