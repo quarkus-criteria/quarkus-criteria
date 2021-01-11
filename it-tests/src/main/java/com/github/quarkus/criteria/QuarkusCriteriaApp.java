@@ -120,7 +120,7 @@ car_sales_point:
 
             System.out.println("======================================================================================");
             System.out.println("Listing cars with: model contains 'tanium' or name = 'Sentra', brand = 'Ford' or 'Nissan' and sales point address = 'Ford motors address' ");
-            List<Car> cars = carService.listCars();
+            List<Car> cars = carService.listCarsByModelBrandAndSalesPointAddress();
             cars.forEach(System.out::println);
             System.out.println("======================================================================================");
             System.out.println("Selecting car model and price and mapping to a DTO");

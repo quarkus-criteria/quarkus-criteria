@@ -160,20 +160,60 @@ assertThat(brands).isNotNull().hasSize(1)
 
 [source, java]
 ----
-List<Car> result = crudService.criteria()
-   .distinct()
-   .fetch(Car_.carSalesPoints, JoinType.LEFT) // fetches salesPoint list in result
-   .fetch(Car_.brand)
-   .join(Car_.brand, where(Brand.class)
-        .or(crudService.criteria(Brand.class).eq(Brand_.name, "Nissan"), //by brand name
-           crudService.criteria(Brand.class).eq(Brand_.name, "Ford")))
-   .join(Car_.carSalesPoints, crudService.where(CarSalesPoint.class, JoinType.LEFT)  //by toMany association property (address)
-        .join(CarSalesPoint_.salesPoint, crudService.where(SalesPoint.class, JoinType.LEFT) // car -> carSalesPoint -> salesPoint.address
-                .eqIgnoreCase(SalesPoint_.address, "ford motors address")))
-   .or(criteria().likeIgnoreCase(Car_.model, "%tanium"),
-                 crudService.criteria().eq(Car_.name, "Sentra"))
-   .getResultList();
+public List<Car> listCarsByModelBrandAndSalesPointAddress() {
+    return criteria()
+            .distinct()
+            .fetch(Car_.brand)
+            .join(Car_.brand, where(Brand.class)
+                    .or(criteria(Brand.class).eq(Brand_.name, "Nissan"),
+                            criteria(Brand.class).eq(Brand_.name, "Ford")))
+            .join(Car_.carSalesPoints, where(CarSalesPoint.class)
+                    .join(CarSalesPoint_.salesPoint, where(SalesPoint.class)
+                            .eqIgnoreCase(SalesPoint_.address, "ford motors address")))
+            .or(criteria().likeIgnoreCase(Car_.model, "%tanium"),
+                    criteria().eq(Car_.name, "Sentra"))
+            .getResultList();
+    }
+----
 
+https://github.com/quarkus-criteria/quarkus-criteria/blob/master/it-tests/src/main/java/com/github/quarkus/criteria/service/CarService.java#L147[Above criteria^] will generate following select:
+
+----
+Hibernate:
+    select
+        distinct car0_.id as id1_1_0_,
+        brand4_.id as id1_0_1_,
+        car0_.brand_id as brand_id6_1_0_,
+        car0_.model as model2_1_0_,
+        car0_.name as name3_1_0_,
+        car0_.price as price4_1_0_,
+        car0_.version as version5_1_0_,
+        brand4_.name as name2_0_1_
+    from
+        car car0_
+    inner join
+        brand brand1_
+            on car0_.brand_id=brand1_.id
+    inner join
+        car_sales_point carsalespo2_
+            on car0_.id=carsalespo2_.car_id
+    inner join
+        sales_point salespoint3_
+            on carsalespo2_.SALESPOINTS_ID1=salespoint3_.ID1
+            and carsalespo2_.SALESPOINTS_ID2=salespoint3_.ID2
+    inner join
+        brand brand4_
+            on car0_.brand_id=brand4_.id
+    where
+        (
+            brand1_.name=?
+            or brand1_.name=?
+        )
+        and upper(salespoint3_.address)=?
+        and (
+            upper(car0_.model) like ?
+            or car0_.name=?
+        )
 ----
 
 * Aggregation function
@@ -322,7 +362,7 @@ You can query by example using `exampleBuilder`:
       .getResultList();
 
 ----
-<1> select which attributes to consider from example entity, if no attribute is provided then non null properties from example entity  will be considered.
+<1> select which attributes to consider from example entity, if no attribute is provided then non null properties from example entity will be considered.
 
 You can also choice the https://github.com/quarkus-criteria/quarkus-criteria/blob/master/runtime/src/main/java/com/github/quarkus/criteria/runtime/model/ComparisonOperation.java[comparison operation^] to be used when comparing example attribute value:
 
@@ -345,6 +385,42 @@ If no comparisonOperation is provided then `EQ` will be used.
       .usingAttributes(Car_.model).build()
       .getResultList();
 
+----
+
+
+You can also provide multiple attributes:
+
+[source, java]
+----
+Car carExample = new Car().setModel("porche").setName("%avenger");
+List<Car> cars = crudService
+        .exampleBuilder
+        .of(carExample)
+        .usingAttributes(ComparisonOperation.LIKE_IGNORE_CASE, Car_.name, Car_.model)
+        .build()
+        .getResultList();
+----
+
+Which will generate following query:
+
+----
+Hibernate:
+    select
+        car0_.id as id1_1_,
+        car0_.brand_id as brand_id6_1_,
+        car0_.model as model2_1_,
+        car0_.name as name3_1_,
+        car0_.price as price4_1_,
+        car0_.version as version5_1_
+    from
+        car car0_
+    where
+        (
+            upper(car0_.name) like ?
+        )
+        and (
+            upper(car0_.model) like ?
+        )
 ----
 
 Find cars by sales point address example:

@@ -481,6 +481,26 @@ public class CrudServiceIt {
     }
 
     @Test
+    @DataSet("cars-full.yml")
+    public void shouldListCarsByModelBrandAndSalesPointAddress() {
+         List<Car> result = carCrud.criteria()
+                .distinct()
+                .fetch(Car_.brand)
+                .join(Car_.brand, carCrud.where(Brand.class)
+                        .or(carCrud.criteria(Brand.class).eq(Brand_.name, "Nissan"),
+                                carCrud.criteria(Brand.class).eq(Brand_.name, "Ford")))
+                .join(Car_.carSalesPoints, carCrud.where(CarSalesPoint.class)
+                        .join(CarSalesPoint_.salesPoint, carCrud.where(SalesPoint.class)
+                                .eqIgnoreCase(SalesPoint_.address, "ford motors address")))
+                .or(carCrud.criteria().likeIgnoreCase(Car_.model, "%tanium"),
+                        carCrud.criteria().eq(Car_.name, "Sentra"))
+                .getResultList();
+
+         assertThat(result).hasSize(1).flatExtracting(Car::getName, Car::getModel, Car::getBrand)
+                 .contains("Fusion", "Titanium", new Brand(1L));
+    }
+
+    @Test
     @DataSet(value = "sales-points.yml", cleanBefore = true)
     public void shouldListSalesPointsUsingCarService() {
         List<SalesPoint> listSalesPointsByName = carService.listSalesPointsByName("Motors");

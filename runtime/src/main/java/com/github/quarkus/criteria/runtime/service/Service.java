@@ -4,7 +4,7 @@ import javax.inject.Qualifier;
 import java.lang.annotation.*;
 
 /**
- * Marker interface to allow generic CrudServive injection: 
+ * Marker interface to allow generic CrudService injection:
  * <code>
      {@literal @}Inject 
      {@literal @}Service 

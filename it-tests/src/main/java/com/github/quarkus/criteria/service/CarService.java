@@ -52,7 +52,7 @@ public class CarService extends CrudService<Car> implements Serializable {
         //create restrictions based on filter entity
         if (filter.getEntity() != null) {
             Car filterEntity = filter.getEntity();
-            if(filterEntity.getId() != null) {
+            if (filterEntity.getId() != null) {
                 criteria.eq(Car_.id, filterEntity.getId());
             }
             if (filterEntity.hasModel()) {
@@ -128,8 +128,8 @@ public class CarService extends CrudService<Car> implements Serializable {
         return criteria()
                 .fetch(Car_.brand, JoinType.INNER)
                 .join(Car_.carSalesPoints, where(CarSalesPoint.class, JoinType.INNER)
-                    .join(CarSalesPoint_.salesPoint, where(SalesPoint.class, JoinType.LEFT)
-                        .eq(SalesPoint_.salesPointPK, salesPoint.getSalesPointPK())))
+                        .join(CarSalesPoint_.salesPoint, where(SalesPoint.class, JoinType.LEFT)
+                                .eq(SalesPoint_.salesPointPK, salesPoint.getSalesPointPK())))
                 .getResultList();
     }
 
@@ -144,17 +144,16 @@ public class CarService extends CrudService<Car> implements Serializable {
                 .getResultList();
     }
 
-    public List<Car> listCars() {
+    public List<Car> listCarsByModelBrandAndSalesPointAddress() {
         return criteria()
                 .distinct()
-                .fetch(Car_.carSalesPoints, JoinType.LEFT)
                 .fetch(Car_.brand)
                 .join(Car_.brand, where(Brand.class)
                         .or(criteria(Brand.class).eq(Brand_.name, "Nissan"),
                                 criteria(Brand.class).eq(Brand_.name, "Ford")))
-                .join(Car_.carSalesPoints, where(CarSalesPoint.class, JoinType.LEFT)
-                        .join(CarSalesPoint_.salesPoint, where(SalesPoint.class, JoinType.LEFT)
-                        .eqIgnoreCase(SalesPoint_.address, "ford motors address")))
+                .join(Car_.carSalesPoints, where(CarSalesPoint.class)
+                        .join(CarSalesPoint_.salesPoint, where(SalesPoint.class)
+                                .eqIgnoreCase(SalesPoint_.address, "ford motors address")))
                 .or(criteria().likeIgnoreCase(Car_.model, "%tanium"),
                         criteria().eq(Car_.name, "Sentra"))
                 .getResultList();
@@ -169,7 +168,7 @@ public class CarService extends CrudService<Car> implements Serializable {
                                 criteria(Brand.class).eq(Brand_.name, "Tesla")))
                 .join(Car_.carSalesPoints, where(CarSalesPoint.class)
                         .join(CarSalesPoint_.salesPoint, where(SalesPoint.class, JoinType.LEFT)
-                        .likeIgnoreCase(SalesPoint_.name, "%Tesla%")))
+                                .likeIgnoreCase(SalesPoint_.name, "%Tesla%")))
                 .getResultList();
     }
 
