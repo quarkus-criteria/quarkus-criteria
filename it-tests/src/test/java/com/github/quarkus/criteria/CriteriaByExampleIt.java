@@ -41,6 +41,10 @@ public class CriteriaByExampleIt {
     @Service
     CrudService<CarSalesPoint> carSalesPointCrud;
 
+    @Inject
+    @Service
+    CrudService<SalesPoint> salesPointCrud;
+
     @Test
     @DataSet("cars.yml")
     public void shouldFindCarByExample() {
@@ -413,6 +417,21 @@ public class CriteriaByExampleIt {
         assertThat(brands).isNotNull().hasSize(2)
                 .extracting("id")
                 .contains(1L, 3L);
+    }
+
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldListCarsByCarSalesPointName() {
+        CarSalesPoint carSalesPointExample = new CarSalesPoint(new Car(), new SalesPoint().setName("%tesla%"));
+        Car carExample = new Car().setCarSalesPoints(List.of(carSalesPointExample));
+        List<Car> cars = carService
+                .exampleBuilder.of(carExample)
+                .usingAttributes(LIKE_IGNORE_CASE, SalesPoint_.name)
+                .build()
+                .getResultList();
+        assertThat(cars).hasSize(2)
+                .extracting(car -> car.getName())
+                .contains("Model S", "Model X");
     }
 
     @Test

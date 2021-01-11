@@ -63,8 +63,8 @@ public class CarSalesPoint implements PersistenceEntity {
     @Override
     public String toString() {
         return "CarSalesPoint{" +
-                "car=(" + car != null ? (car.getId() + ", "+car.getName()) : ""+")"+
-                ", salesPoint=" + salesPoint != null ? salesPoint.toString() : "" +
+                "car=(" + (car != null ? (car.getId() + ", "+car.getName()) : "")+")"+
+                ", salesPoint=" + (salesPoint != null ? salesPoint.toString() : "") +
                 '}';
     }
 

@@ -153,7 +153,7 @@ public class CarService extends CrudService<Car> implements Serializable {
                                 criteria(Brand.class).eq(Brand_.name, "Ford")))
                 .join(Car_.carSalesPoints, where(CarSalesPoint.class)
                         .join(CarSalesPoint_.salesPoint, where(SalesPoint.class)
-                                .eqIgnoreCase(SalesPoint_.address, "ford motors address")))
+                        .eqIgnoreCase(SalesPoint_.address, "ford motors address")))
                 .or(criteria().likeIgnoreCase(Car_.model, "%tanium"),
                         criteria().eq(Car_.name, "Sentra"))
                 .getResultList();
