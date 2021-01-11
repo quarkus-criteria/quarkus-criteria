@@ -24,29 +24,16 @@ public class MultiSort {
     }
 
     @Override
-    public int hashCode() {
-        int hash = 7;
-        return hash;
+    public boolean equals(Object o) {
+        if (this == o) return true;
+        if (o == null || getClass() != o.getClass()) return false;
+        MultiSort multiSort = (MultiSort) o;
+        return sort == multiSort.sort &&
+                Objects.equals(sortField, multiSort.sortField);
     }
 
     @Override
-    public boolean equals(Object obj) {
-        if (this == obj) {
-            return true;
-        }
-        if (obj == null) {
-            return false;
-        }
-        if (getClass() != obj.getClass()) {
-            return false;
-        }
-        final MultiSort other = (MultiSort) obj;
-        if (!Objects.equals(this.sortField, other.sortField)) {
-            return false;
-        }
-        if (this.sort != other.sort) {
-            return false;
-        }
-        return true;
+    public int hashCode() {
+        return Objects.hash(sort);
     }
 }
