@@ -15,7 +15,7 @@
 
 image:https://github.com/quarkus-criteria/quarkus-criteria/workflows/Quarkus%20Criteria%20Build/badge.svg[Build Status, link=https://github.com/quarkus-criteria/quarkus-criteria/actions?query=workflow%3A%22Quarkus+Criteria+Build%22]
 image:https://coveralls.io/repos/github/quarkus-criteria/quarkus-criteria/badge.svg?branch=master[Coverage, link=https://coveralls.io/github/quarkus-criteria/quarkus-criteria?branch=master]
-image:https://img.shields.io/maven-central/v/com.github.quarkus.criteria/quarkus-criteria.svg?label=Maven%20Central["Maven Central",link="https://search.maven.org/search?q=g:com.github.quarkus.criteria%20AND%20a:quarkus-criteria"]
+image:https://img.shields.io/maven-central/v/com.github.quarkus-criteria/quarkus-criteria.svg?label=Maven%20Central["Maven Central",link="https://search.maven.org/search?q=g:com.github.quarkus-criteria%20AND%20a:quarkus-criteria"]
 
 Enables `type safe` and fluent criteria API for `Quarkus applications` via https://deltaspike.apache.org/documentation/data.html#JPACriteriaAPISupport[DeltaSpike Criteria^].
 
