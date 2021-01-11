@@ -445,7 +445,7 @@ assertThat(carsFound).isNotNull().hasSize(2)
         .extracting("name")
         .contains("Model S", "Model X");
 ----
-<1> Fatch association attribute in result list
+<1> Fetch association attribute in result list
 
 List brands by sales point address:
 
