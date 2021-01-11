@@ -103,7 +103,7 @@ TIP: See https://docs.jboss.org/hibernate/orm/5.0/topical/html/metamodelgen/Meta
 
 * Now you're ready to use https://deltaspike.apache.org/documentation/data.html#JPACriteriaAPISupport[DeltaSpike type safe fluent criteria API] on your Quarkus application
 
-For examples below consider the following entities associations:
+For examples below consider the following entity associations:
 
 image::entities.png[]
 
