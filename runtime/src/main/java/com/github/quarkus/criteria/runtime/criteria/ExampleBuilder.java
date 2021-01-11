@@ -98,6 +98,9 @@ public class ExampleBuilder<T extends PersistenceEntity> {
          * @param usingAttributes     attributes from example entity to consider. If no attribute is provided then non null attributes will be used.
          */
         public ExampleBuilderDsl usingAttributes(ComparisonOperation comparisonOperation, Attribute<T, ?>... usingAttributes) {
+            if (comparisonOperation == null) {
+                comparisonOperation = ComparisonOperation.EQ;
+            }
             return addExampleRestrictions(comparisonOperation, usingAttributes);
         }
 
@@ -134,9 +137,6 @@ public class ExampleBuilder<T extends PersistenceEntity> {
         }
 
         private void addSingularRestriction(final Attribute<T, ?> attribute, ComparisonOperation operation) {
-            if (operation == null) {
-                operation = ComparisonOperation.EQ;
-            }
             if (!exampleAttributes.contains(attribute)) {
                 addAssociationRestriction(attribute, operation);
                 return;
