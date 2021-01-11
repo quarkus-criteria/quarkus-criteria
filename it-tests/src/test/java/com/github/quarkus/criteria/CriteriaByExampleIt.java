@@ -145,7 +145,7 @@ public class CriteriaByExampleIt {
 
     @Test
     @DataSet("cars-full.yml")
-    public void shouldFindCarByBrandAndPrice() {
+    public void shouldFindCarAndCountByBrandAndPrice() {
         Car carExample = new Car().setModel("SE")
                 .setPrice(12.999);
         Brand brand = new Brand(2L);
@@ -170,6 +170,26 @@ public class CriteriaByExampleIt {
                 .extracting("name")
                 .contains("Sentra");
         assertThat(carsFound.get(0).getBrand().getName()).isEqualTo("Nissan");
+    }
+
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldFindCarByModelNamePriceAndBrand() {
+        Brand brand = new Brand().setName("%ssan");
+        Car carExample = new Car().setModel("SE").setName("%tra")
+                .setPrice(12.999)
+                .setBrand(brand);
+        Car car = (Car) carService
+                .exampleBuilder.of(carExample)
+                .usingAttributes(Car_.model) //EQ
+                .usingAttributes(LIKE_IGNORE_CASE, Brand_.name, Car_.name)
+                .usingAttributes(LT_OR_EQ, Car_.price)
+                .build()
+                .fetch(Car_.brand)
+                .getSingleResult();
+        assertThat(car).isNotNull()
+                .extracting(Car::getName, Car::getModel, Car::getBrand)
+                .contains("Sentra", "SE", new Brand(2L));//brand id=2 is nissan
     }
 
 

@@ -490,6 +490,58 @@ Hibernate:
         salespoint3_.address=?
 ----
 
+Different operation for each attributes:
+
+[source, java]
+----
+Brand brand = new Brand().setName("%ssan");
+Car carExample = new Car().setModel("SE").setName("%tra")
+        .setPrice(12.999)
+        .setBrand(brand);
+Car car = (Car) carService
+        .exampleBuilder.of(carExample)
+        .usingAttributes(Car_.model) //EQ
+        .usingAttributes(LIKE_IGNORE_CASE, Brand_.name, Car_.name)
+        .usingAttributes(LT_OR_EQ, Car_.price)
+        .build()
+        .fetch(Car_.brand)
+        .getSingleResult();
+assertThat(car).isNotNull()
+        .extracting(Car::getName, Car::getModel, Car::getBrand)
+        .contains("Sentra", "SE", new Brand(2L));//brand id=2 is nissan
+----
+
+The following select is generated from above example:
+
+----
+Hibernate:
+    select
+        car0_.id as id1_1_0_,
+        brand2_.id as id1_0_1_,
+        car0_.brand_id as brand_id6_1_0_,
+        car0_.model as model2_1_0_,
+        car0_.name as name3_1_0_,
+        car0_.price as price4_1_0_,
+        car0_.version as version5_1_0_,
+        brand2_.name as name2_0_1_
+    from
+        car car0_
+    inner join
+        brand brand1_
+            on car0_.brand_id=brand1_.id
+    inner join
+        brand brand2_
+            on car0_.brand_id=brand2_.id
+    where
+        car0_.model=?
+        and (
+            upper(brand1_.name) like ?
+        )
+        and (
+            upper(car0_.name) like ?
+        )
+        and car0_.price<=12.999
+----
 
 TIP: More examples https://github.com/quarkus-criteria/quarkus-criteria/blob/master/it-tests/src/test/java/com/github/quarkus/criteria/CriteriaByExampleIt.java#L27[can be found here].
 
