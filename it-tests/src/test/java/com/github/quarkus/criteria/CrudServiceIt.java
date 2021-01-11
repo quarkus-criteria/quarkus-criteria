@@ -405,11 +405,10 @@ public class CrudServiceIt {
                 .extracting("name")
                 .contains("Model S", "Model X");
 
-
         List<Brand> brands = brandCrud.criteria()
                 .distinct()
                 .join(Brand_.cars, brandCrud.where(Car.class)
-                .in(Car_.id, toListOfIds(carsFound, new Integer[0])))
+                        .in(Car_.id, toListOfIds(carsFound, new Integer[0])))
                 .getResultList();
 
         assertThat(brands).isNotNull().hasSize(1)
@@ -417,6 +416,20 @@ public class CrudServiceIt {
                 .contains("Tesla");
     }
 
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldListBrandsByCarSalesPoint() {
+        List<CarSalesPoint> carSalesPoints = List.of(new CarSalesPoint(new CarSalesPointId(1, new SalesPointPK(1L, 2L))),
+                new CarSalesPoint(new CarSalesPointId(2, new SalesPointPK(1L, 4L))));
+        List<Brand> brands = brandCrud.criteria()
+                .join(Brand_.cars, brandCrud.where(Car.class)
+                .join(Car_.carSalesPoints, brandCrud.where(CarSalesPoint.class)
+                .in(CarSalesPoint_.carSalesPointId, toListOfIds(carSalesPoints, new CarSalesPointId[0]))))
+                .getResultList();
+        assertThat(brands).hasSize(2)
+                .extracting(brand -> brand.getName())
+                .contains("Ford", "Nissan");
+    }
 
     @Test
     @DataSet("cars-full.yml")

@@ -61,7 +61,6 @@ public class ExampleBuilder<T extends PersistenceEntity> {
         }
 
         /**
-         *
          * @return A criteria populated with restrictions based on example entity
          */
         public Criteria<T, ?> build() {
@@ -118,13 +117,13 @@ public class ExampleBuilder<T extends PersistenceEntity> {
                     } else if (usingAttribute instanceof PluralAttribute) {
                         if (!exampleAttributes.contains(usingAttribute)) {
                             addAssociationRestriction(usingAttribute, comparisonOperation);
-                        } else if (usingAttribute.getJavaMember() instanceof Field) {
+                        } else {
                             final Object value = field.get(example);
-                            if (value == null || !(value instanceof Collection)) {
+                            if (!(value instanceof Collection)) {
                                 LOG.warning(format("Ignoring example attribute %s for entity %s because it's value %s is not a Collection.", usingAttribute.getName(), example.getClass().getName(), value));
                                 continue;
                             }
-                            addPluralRestriction(usingAttribute, (Collection) value);
+                            createPluralRestriction(usingAttribute, (Collection) value);
                         }
                     }
                 } catch (IllegalAccessException e) {
@@ -135,29 +134,29 @@ public class ExampleBuilder<T extends PersistenceEntity> {
         }
 
         private void addSingularRestriction(final Attribute<T, ?> attribute, ComparisonOperation operation) {
-            if (attribute.getJavaMember() instanceof Field) {
-                if (operation == null) {
-                    operation = ComparisonOperation.EQ;
-                }
-                if (!exampleAttributes.contains(attribute)) {
-                    addAssociationRestriction(attribute, operation);
-                    return;
-                }
-                final Field field = (Field) attribute.getJavaMember();
-                field.setAccessible(true);
-                try {
-                    final Object value = field.get(example);
-                    if (value != null || NULL_OPERATIONS.contains(operation)) {
+            if (operation == null) {
+                operation = ComparisonOperation.EQ;
+            }
+            if (!exampleAttributes.contains(attribute)) {
+                addAssociationRestriction(attribute, operation);
+                return;
+            }
+            final Field field = (Field) attribute.getJavaMember();
+            field.setAccessible(true);
+            try {
+                final Object value = field.get(example);
+                if (value != null || NULL_OPERATIONS.contains(operation)) {
+                    if(LOG.isLoggable(Level.DEBUG)) {
                         LOG.log(Level.DEBUG, format("Adding an %s restriction on attribute %s using value %s.", operation.name(), attribute.getName(), value));
-                        createRestriction(criteria, (SingularAttribute) attribute, operation, value);
                     }
-                } catch (IllegalAccessException e) {
-                    LOG.warning(format("Could not get value from field %s of entity %s.", field.getName(), example.getClass().getName()));
+                    createSingularRestriction(criteria, (SingularAttribute) attribute, operation, value);
                 }
+            } catch (IllegalAccessException e) {
+                LOG.warning(format("Could not get value from field %s of entity %s.", field.getName(), example.getClass().getName()));
             }
         }
 
-        private void createRestriction(Criteria criteria, SingularAttribute attribute, ComparisonOperation operation, Object value) {
+        private void createSingularRestriction(Criteria criteria, SingularAttribute attribute, ComparisonOperation operation, Object value) {
             hasRestrictions = true;
             switch (operation) {
                 case EQ:
@@ -263,7 +262,11 @@ public class ExampleBuilder<T extends PersistenceEntity> {
                     Field attrField = (Field) attribute.getJavaMember();
                     attrField.setAccessible(true);
                     Object attrValue = attrField.get(exampleValue);
-                    createRestriction(criteria, (SingularAttribute) attribute, operation, attrValue);
+                    if(attrValue instanceof Collection) {
+                        createPluralRestriction(attribute, (Collection) attrValue);
+                    } else {
+                        createSingularRestriction(criteria, (SingularAttribute) attribute, operation, attrValue);
+                    }
                 }
             }
 
@@ -278,27 +281,28 @@ public class ExampleBuilder<T extends PersistenceEntity> {
             }
         }
 
-        private void addPluralRestriction(final Attribute<T, ?> attribute, final Collection values) {
+        private void createPluralRestriction(final Attribute<T, ?> attribute, final Collection values) {
+            hasRestrictions = true;
             if (values == null || values.isEmpty()) {
                 LOG.warning(format("Ignoring example attribute %s for entity %s because it's value is null", attribute.getName(), example.getClass().getName()));
                 return;
             }
-            if (attribute.getJavaMember() instanceof Field) {
-                final PluralAttribute<T, ?, ?> listAttribute = (PluralAttribute<T, ?, ?>) attribute;
-                final Class joinClass = listAttribute.getElementType().getJavaType();
-                final Criteria joinCriteria = new QueryCriteria(joinClass, joinClass, exampleBuilder.entityManager, JoinType.LEFT);
-                final Field field = (Field) attribute.getJavaMember();
-                field.setAccessible(true);
+            final PluralAttribute<T, ?, ?> listAttribute = (PluralAttribute<T, ?, ?>) attribute;
+            final Class joinClass = listAttribute.getElementType().getJavaType();
+            final Criteria joinCriteria = new QueryCriteria(joinClass, joinClass, exampleBuilder.entityManager, JoinType.LEFT);
+            final Field field = (Field) attribute.getJavaMember();
+            field.setAccessible(true);
+            if(LOG.isLoggable(Level.DEBUG)) {
                 LOG.log(Level.DEBUG, format("Adding an 'in'restriction on attribute %s using values %s.", attribute.getName(), values));
-                Collection<PersistenceEntity> association = (Collection<PersistenceEntity>) values;
-                SingularAttribute id = exampleBuilder.entityManager.getMetamodel().entity(listAttribute.getElementType().getJavaType()).getId(association.iterator().next().getId().getClass());
-                List<Serializable> ids = new ArrayList<>();
-                for (PersistenceEntity persistenceEntity : association) {
-                    ids.add(persistenceEntity.getId());
-                }
-                addPluralJoin(criteria, listAttribute, joinCriteria);
-                joinCriteria.in(id, ids);
             }
+            Collection<PersistenceEntity> association = (Collection<PersistenceEntity>) values;
+            SingularAttribute id = exampleBuilder.entityManager.getMetamodel().entity(listAttribute.getElementType().getJavaType()).getId(association.iterator().next().getId().getClass());
+            List<Serializable> ids = new ArrayList<>();
+            for (PersistenceEntity persistenceEntity : association) {
+                ids.add(persistenceEntity.getId());
+            }
+            addPluralJoin(criteria, listAttribute, joinCriteria);
+            joinCriteria.in(id, ids);
         }
 
         private void addPluralJoin(Criteria criteria, PluralAttribute<T, ?, ?> listAttribute, Criteria joinCriteria) {

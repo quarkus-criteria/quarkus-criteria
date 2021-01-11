@@ -288,6 +288,53 @@ public class CriteriaByExampleIt {
 
     @Test
     @DataSet("cars-full.yml")
+    public void shouldListBrandsByCarId() {
+        Car modelS = new Car(3);
+        Brand brandExample = new Brand()
+                .setCars(Set.of(modelS));
+        List<Brand> brands = brandCrud.exampleBuilder
+                .of(brandExample)
+                .usingAttributes(Car_.id)
+                .build()
+                .getResultList();
+        assertThat(brands).isNotNull().hasSize(1)
+                .extracting(brand -> brand.getName())
+                .contains("Tesla");
+    }
+
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldListBrandsMultipleByCarsIds() {
+        Car fusion = new Car(1);
+        Car modelS = new Car(3);
+        Brand brandExample = new Brand()
+                .setCars(Set.of(fusion, modelS));
+        List<Brand> brands = brandCrud.exampleBuilder
+                .of(brandExample)
+                .usingAttributes(Brand_.cars)
+                .build()
+                .getResultList();
+        assertThat(brands).isNotNull().hasSize(2)
+                .extracting(brand -> brand.getName())
+                .contains("Ford", "Tesla");
+    }
+
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldListBrandsByCarSalesPoint() {
+        List<CarSalesPoint> carSalesPoints = List.of(new CarSalesPoint(new CarSalesPointId(1, new SalesPointPK(1L, 2L))),
+                new CarSalesPoint(new CarSalesPointId(2, new SalesPointPK(1L, 4L))));
+
+        Car carExample = new Car().setCarSalesPoints(carSalesPoints);
+        Brand exampleBrand = new Brand()
+                .setCars(Set.of(carExample));
+        brandCrud.exampleBuilder.of(exampleBrand)
+                .usingAttributes(Car_.carSalesPoints)
+                .build();
+    }
+
+    @Test
+    @DataSet("cars-full.yml")
     public void shouldFindCarByExampleUsingAnExistingCriteria() {
         Criteria<Car, Car> criteria = crudService.criteria()
                 .join(Car_.brand, carService.where(Brand.class)

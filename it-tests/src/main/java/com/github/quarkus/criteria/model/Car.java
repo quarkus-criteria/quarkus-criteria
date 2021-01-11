@@ -112,8 +112,9 @@ public class Car extends BaseEntity {
         return carSalesPoints;
     }
 
-    public void setCarSalesPoints(List<CarSalesPoint> carSalesPoints) {
+    public Car setCarSalesPoints(List<CarSalesPoint> carSalesPoints) {
         this.carSalesPoints = carSalesPoints;
+        return this;
     }
 
     public Car setSalesPoints(List<SalesPoint> salesPoints) {
