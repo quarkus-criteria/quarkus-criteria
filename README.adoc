@@ -357,7 +357,7 @@ You can query by example using `exampleBuilder`:
 ----
  Car carExample = new Car().model("Ferrari");
  List<Car> cars = carService
-      .exampleBuilder.of(carExample, ComparisonOperation)
+      .exampleBuilder.of(carExample)
       .usingAttributes(Car_.model).build() <1>
       .getResultList();
 
@@ -381,7 +381,7 @@ If no comparisonOperation is provided then `EQ` will be used.
 ----
  Car carExample = new Car().model("Ferrari");
  List<Car> cars = carService
-      .exampleBuilder.of(carExample, ComparisonOperation)
+      .exampleBuilder.of(carExample)
       .usingAttributes(Car_.model).build()
       .getResultList();
 
