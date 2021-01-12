@@ -119,7 +119,7 @@ The easiest way to use quarkus criteria is via *generic injection* of `CrudServi
 CrudService<Car> crudService;
 ----
 
-Below are some example criteria you can create:
+Below are some query examples:
 
 * List cars by brand name:
 
@@ -358,7 +358,8 @@ You can query by example using `exampleBuilder`:
  Car carExample = new Car().model("Ferrari");
  List<Car> cars = carService
       .exampleBuilder.of(carExample)
-      .usingAttributes(Car_.model).build() <1>
+      .usingAttributes(Car_.model) <1>
+      .build()
       .getResultList();
 
 ----
@@ -371,7 +372,8 @@ You can also choice the https://github.com/quarkus-criteria/quarkus-criteria/blo
 Car carExample = new Car().setModel("%rrari");
 List<Car> cars = carService
         .exampleBuilder.of(carExample)
-        .usingAttributes(ComparisonOperation.LIKE_IGNORE_CASE, Car_.model).build()
+        .usingAttributes(ComparisonOperation.LIKE_IGNORE_CASE, Car_.model)
+        .build()
         .getResultList();
 ----
 
@@ -382,11 +384,11 @@ If no comparisonOperation is provided then `EQ` will be used.
  Car carExample = new Car().model("Ferrari");
  List<Car> cars = carService
       .exampleBuilder.of(carExample)
-      .usingAttributes(Car_.model).build()
+      .usingAttributes(Car_.model)
+      .build()
       .getResultList();
 
 ----
-
 
 You can also provide multiple attributes:
 
@@ -545,10 +547,9 @@ Hibernate:
 
 TIP: More examples https://github.com/quarkus-criteria/quarkus-criteria/blob/master/it-tests/src/test/java/com/github/quarkus/criteria/CriteriaByExampleIt.java#L27[can be found here].
 
-
 == Integration tests
 
-Integration tests are located in `it-tests` modules, to run them just run maven command:
+Integration tests are located in `it-tests` module, to run them just run maven command:
 
 `mvn test`
 
@@ -585,7 +586,7 @@ To run native tests inside docker (without the need to install GraalVM):
 
 === System tests rest application
 
-The system tests example application needs a Postgres database running, use the following docker command to spin up one:
+The system tests example application needs a PostgreSQL database running, use the following docker command to spin up one:
 
 `docker run --ulimit memlock=-1:-1 -it --rm=true --memory-swappiness=0 --name quarkus_test -e POSTGRES_USER=car -e POSTGRES_PASSWORD=car -e POSTGRES_DB=cars -p 5432:5432 postgres:11.5`
 
