@@ -1,5 +1,6 @@
 package com.github.quarkus.criteria.runtime.criteria;
 
+import com.github.quarkus.criteria.runtime.criteria.example.ExampleBuilder;
 import com.github.quarkus.criteria.runtime.model.PersistenceEntity;
 import org.apache.deltaspike.data.api.criteria.Criteria;
 import org.apache.deltaspike.data.api.criteria.CriteriaSupport;

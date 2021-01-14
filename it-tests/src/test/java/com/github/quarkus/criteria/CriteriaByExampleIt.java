@@ -13,7 +13,6 @@ import org.assertj.core.api.AssertionsForClassTypes;
 import org.junit.jupiter.api.Test;
 
 import javax.inject.Inject;
-import javax.persistence.criteria.JoinType;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -51,7 +50,7 @@ public class CriteriaByExampleIt {
         Car carExample = new Car().setModel("%rrari");
         List<Car> cars = carService
                 .exampleBuilder.of(carExample)
-                .usingAttributes(ComparisonOperation.LIKE_IGNORE_CASE, Car_.model).build()
+                .with(ComparisonOperation.LIKE_IGNORE_CASE, Car_.model).build()
                 .getResultList();
         assertThat(cars).isNotNull()
                 .hasSize(1)
@@ -65,7 +64,7 @@ public class CriteriaByExampleIt {
         Car carExample = new Car().setModel("Ferrari");
         List<Car> cars = crudService
                 .exampleBuilder.of(carExample)
-                .usingAttributes(Car_.model)
+                .with(Car_.model)
                 .build()
                 .getResultList();
         assertThat(cars).isNotNull().hasSize(1)
@@ -76,7 +75,7 @@ public class CriteriaByExampleIt {
         cars = crudService
                 .exampleBuilder
                 .of(carExample)
-                .usingAttributes(ComparisonOperation.LIKE_IGNORE_CASE, Car_.name, Car_.model)
+                .with(ComparisonOperation.LIKE_IGNORE_CASE, Car_.name, Car_.model)
                 .build()
                 .getResultList();
 
@@ -91,7 +90,7 @@ public class CriteriaByExampleIt {
         Car carExample = new Car().setModel("Ferrari");
         List<Car> cars = crudService
                 .exampleBuilder.of(carExample)
-                .usingAttributes().build()
+                .with().build()
                 .getResultList();
         assertThat(cars).isNotNull().hasSize(1)
                 .extracting("model")
@@ -104,7 +103,7 @@ public class CriteriaByExampleIt {
         Car carExample = new Car().setModel("porche").setName("%avenger");
         List<Car> cars = crudService
                 .exampleBuilder.of(carExample)
-                .usingAttributes(ComparisonOperation.LIKE_IGNORE_CASE)
+                .with(ComparisonOperation.LIKE_IGNORE_CASE)
                 .build()
                 .getResultList();
         assertThat(cars).isNotNull().hasSize(1)
@@ -118,7 +117,7 @@ public class CriteriaByExampleIt {
         Car carExample = new Car().setModel("porche");
         List<Car> cars = crudService
                 .exampleBuilder.of(carExample)
-                .usingAttributes(ComparisonOperation.EQ_IGNORE_CASE)
+                .with(ComparisonOperation.EQ_IGNORE_CASE)
                 .build()
                 .getResultList();
         assertThat(cars).isNotNull().hasSize(1)
@@ -133,7 +132,7 @@ public class CriteriaByExampleIt {
         CarSalesPoint carSalesPointExample = new CarSalesPoint(new Car(), salesPoint);
         List<CarSalesPoint> carSalesPointsFound = carSalesPointCrud
                 .exampleBuilder.of(carSalesPointExample)
-                .usingAttributes(CarSalesPoint_.salesPoint)
+                .with(CarSalesPoint_.salesPoint)
                 .build()
                 .fetch(CarSalesPoint_.salesPoint)
                 .getResultList();
@@ -154,16 +153,16 @@ public class CriteriaByExampleIt {
 
         Criteria<Car, Car> criteriaByExample = carService
                 .exampleBuilder.of(carExample)
-                .usingAttributes(Car_.model)
-                .usingAttributes(Car_.brand)
-                .usingAttributes(LT_OR_EQ, Car_.price)
+                .with(Car_.model)
+                .with(Car_.brand)
+                .with(LT_OR_EQ, Car_.price)
                 .build();
 
         assertThat(carService.count(criteriaByExample).intValue()).isEqualTo(1);
 
         List<Car> carsFound = carService
                 .exampleBuilder.of(carExample)
-                .usingCriteria(criteriaByExample)
+                .withCriteria(criteriaByExample)
                 .build().fetch(Car_.brand)
                 .getResultList();
         assertThat(carsFound).isNotNull().hasSize(1)
@@ -181,9 +180,9 @@ public class CriteriaByExampleIt {
                 .setBrand(brand);
         Car car = (Car) carService
                 .exampleBuilder.of(carExample)
-                .usingAttributes(Car_.model) //EQ
-                .usingAttributes(LIKE_IGNORE_CASE, Brand_.name, Car_.name)
-                .usingAttributes(LT_OR_EQ, Car_.price)
+                .with(Car_.model) //EQ
+                .with(LIKE_IGNORE_CASE, Brand_.name, Car_.name)
+                .with(LT_OR_EQ, Car_.price)
                 .build()
                 .fetch(Car_.brand)
                 .getSingleResult();
@@ -202,7 +201,7 @@ public class CriteriaByExampleIt {
 
         List<Car> carsFound = carService
                 .exampleBuilder.of(carExample)
-                .usingAttributes(LIKE_IGNORE_CASE, Brand_.name)
+                .with(LIKE_IGNORE_CASE, Brand_.name)
                 .build()
                 .fetch(Car_.brand) //bring brand association into result list
                 .getResultList();
@@ -221,8 +220,8 @@ public class CriteriaByExampleIt {
 
         List<CarSalesPoint> carSalesPointsFound = carSalesPointCrud
                 .exampleBuilder.of(carSalesPointExample)
-                .usingCriteria(carSalesPointCrud.criteria().distinct())
-                .usingAttributes(CarSalesPoint_.salesPoint)
+                .withCriteria(carSalesPointCrud.criteria().distinct())
+                .with(CarSalesPoint_.salesPoint)
                 .build().fetch(CarSalesPoint_.salesPoint)
                 .getResultList();
         assertThat(carSalesPointsFound).isNotNull().hasSize(2);
@@ -242,7 +241,7 @@ public class CriteriaByExampleIt {
 
         List<CarSalesPoint> carSalesPointsFound = carSalesPointCrud
                 .exampleBuilder.of(carSalesPointExample)
-                .usingAttributes(SalesPoint_.address)
+                .with(SalesPoint_.address)
                 .build()
                 .distinct()
                 .fetch(CarSalesPoint_.salesPoint)
@@ -263,11 +262,11 @@ public class CriteriaByExampleIt {
         CarSalesPoint carSalesPointExample = new CarSalesPoint().setCar(car);
         Criteria build = carSalesPointCrud
                 .exampleBuilder.of(carSalesPointExample)
-                .usingCriteria(carSalesPointCrud.criteria()
+                .withCriteria(carSalesPointCrud.criteria()
                         .distinct()
                         .fetch(CarSalesPoint_.salesPoint)
                 )
-                .usingAttributes(EQ_IGNORE_CASE, Brand_.name)
+                .with(EQ_IGNORE_CASE, Brand_.name)
                 .build();
         List<CarSalesPoint> carSalesPointsFound = build.getResultList();
         assertThat(carSalesPointsFound).isNotNull().hasSize(2)
@@ -283,7 +282,7 @@ public class CriteriaByExampleIt {
                 .setCars(Set.of(car));
         List<Brand> brands = brandCrud.exampleBuilder
                 .of(brandExample)
-                .usingAttributes(GT, Car_.price)
+                .with(GT, Car_.price)
                 .build()
                 .getResultList();
         assertThat(brands).isNotNull().hasSize(2)
@@ -301,7 +300,7 @@ public class CriteriaByExampleIt {
 
         List<Brand> brands = brandCrud.exampleBuilder
                 .of(brandExample)
-                .usingAttributes(EQ, SalesPoint_.address)
+                .with(EQ, SalesPoint_.address)
                 .build()
                 .distinct()
                 .getResultList();
@@ -318,7 +317,7 @@ public class CriteriaByExampleIt {
                 .setCars(Set.of(modelS));
         List<Brand> brands = brandCrud.exampleBuilder
                 .of(brandExample)
-                .usingAttributes(Car_.id)
+                .with(Car_.id)
                 .build()
                 .getResultList();
         assertThat(brands).isNotNull().hasSize(1)
@@ -335,7 +334,7 @@ public class CriteriaByExampleIt {
                 .setCars(Set.of(fusion, modelS));
         List<Brand> brands = brandCrud.exampleBuilder
                 .of(brandExample)
-                .usingAttributes(Brand_.cars)
+                .with(Brand_.cars)
                 .build()
                 .getResultList();
         assertThat(brands).isNotNull().hasSize(2)
@@ -353,7 +352,7 @@ public class CriteriaByExampleIt {
         Brand exampleBrand = new Brand()
                 .setCars(Set.of(carExample));
         brandCrud.exampleBuilder.of(exampleBrand)
-                .usingAttributes(Car_.carSalesPoints)
+                .with(Car_.carSalesPoints)
                 .build();
     }
 
@@ -370,14 +369,14 @@ public class CriteriaByExampleIt {
 
         Criteria<Car, Car> criteriaByExample = carService
                 .exampleBuilder.of(carExample)
-                .usingCriteria(criteria)
-                .usingAttributes(Car_.model)
+                .withCriteria(criteria)
+                .with(Car_.model)
                 .build();
 
         criteriaByExample = carService
                 .exampleBuilder.of(carExample)
-                .usingCriteria(criteriaByExample)
-                .usingAttributes(Car_.carSalesPoints)
+                .withCriteria(criteriaByExample)
+                .with(Car_.carSalesPoints)
                 .build();
 
         AssertionsForClassTypes.assertThat(carService.count(criteriaByExample).intValue()).isEqualTo(1);
@@ -397,10 +396,10 @@ public class CriteriaByExampleIt {
         CarSalesPoint carSalesPoint = new CarSalesPoint(new Car(), salesPoint);
         List<CarSalesPoint> resultList = carSalesPointCrud
                 .exampleBuilder.of(carSalesPoint)
-                .usingCriteria(carSalesPointCrud.criteria()
+                .withCriteria(carSalesPointCrud.criteria()
                         .distinct()
                         .orderAsc(CarSalesPoint_.carSalesPointId))
-                .usingAttributes(CarSalesPoint_.salesPoint)
+                .with(CarSalesPoint_.salesPoint)
                 .build().fetch(CarSalesPoint_.salesPoint)
                 .getResultList();
 
@@ -423,7 +422,7 @@ public class CriteriaByExampleIt {
     public void shouldFindByExampleUsingNullOperation() {
         List<Brand> brands = brandCrud
                 .exampleBuilder.of(new Brand())
-                .usingAttributes(ComparisonOperation.IS_NULL, Brand_.name)
+                .with(ComparisonOperation.IS_NULL, Brand_.name)
                 .build()
                 .getResultList();
         assertThat(brands).isNotNull().hasSize(1)
@@ -432,7 +431,7 @@ public class CriteriaByExampleIt {
 
         brands = brandCrud
                 .exampleBuilder.of(new Brand())
-                .usingAttributes(ComparisonOperation.NOT_NULL, Brand_.name)
+                .with(ComparisonOperation.NOT_NULL, Brand_.name)
                 .build()
                 .getResultList();
         assertThat(brands).isNotNull().hasSize(2)
@@ -447,7 +446,7 @@ public class CriteriaByExampleIt {
         Car carExample = new Car().setCarSalesPoints(List.of(carSalesPointExample));
         List<Car> cars = carService
                 .exampleBuilder.of(carExample)
-                .usingAttributes(LIKE_IGNORE_CASE, SalesPoint_.name)
+                .with(LIKE_IGNORE_CASE, SalesPoint_.name)
                 .build()
                 .getResultList();
         assertThat(cars).hasSize(2)
@@ -464,7 +463,7 @@ public class CriteriaByExampleIt {
 
         List<Car> carsFound = carService.exampleBuilder
                 .of(new Car().setBrand(tesla))
-                .usingAttributes()
+                .with()
                 .build()
                 .getResultList();
         assertThat(carsFound).isNotNull().hasSize(2)
@@ -474,7 +473,7 @@ public class CriteriaByExampleIt {
         tesla.setCars(new HashSet<>(carsFound));
         List<Brand> brands = brandCrud.exampleBuilder
                 .of(tesla)
-                .usingAttributes(Brand_.cars)
+                .with(Brand_.cars)
                 .build().fetch(Brand_.cars)
                 .distinct()
                 .getResultList();
@@ -489,7 +488,7 @@ public class CriteriaByExampleIt {
     public void shouldListCarsUsingPriceByExample() {
         List<Car> carsFound = carService.exampleBuilder
                 .of(new Car().setPrice(9.999D))
-                .usingAttributes(LT, Car_.price)
+                .with(LT, Car_.price)
                 .build().getResultList();
         assertThat(carsFound).isNotNull().hasSize(1)
                 .extracting("name")
@@ -497,7 +496,7 @@ public class CriteriaByExampleIt {
 
         carsFound = carService.exampleBuilder
                 .of(new Car().setPrice(9.999D))
-                .usingAttributes(LT_OR_EQ, Car_.price)
+                .with(LT_OR_EQ, Car_.price)
                 .build().getResultList();
         assertThat(carsFound).isNotNull().hasSize(2)
                 .extracting("name")
@@ -505,7 +504,7 @@ public class CriteriaByExampleIt {
 
         carsFound = carService.exampleBuilder
                 .of(new Car().setPrice(9.999D))
-                .usingAttributes(GT, Car_.price)
+                .with(GT, Car_.price)
                 .build().getResultList();
         assertThat(carsFound).isNotNull().hasSize(2)
                 .extracting("name")
@@ -513,7 +512,7 @@ public class CriteriaByExampleIt {
 
         carsFound = carService.exampleBuilder
                 .of(new Car().setPrice(9.999D))
-                .usingAttributes(GT_OR_EQ, Car_.price)
+                .with(GT_OR_EQ, Car_.price)
                 .build().getResultList();
         assertThat(carsFound).isNotNull().hasSize(3)
                 .extracting("name")
@@ -525,7 +524,7 @@ public class CriteriaByExampleIt {
     public void shouldListCarsUsingNameByExample() {
         List<Car> carsFound = carService.exampleBuilder
                 .of(new Car().setName("%odel%"))
-                .usingAttributes(LIKE, Car_.name)
+                .with(LIKE, Car_.name)
                 .build().getResultList();
         assertThat(carsFound).isNotNull().hasSize(2)
                 .extracting("name")
@@ -533,7 +532,7 @@ public class CriteriaByExampleIt {
 
         carsFound = carService.exampleBuilder
                 .of(new Car().setName("%odel%"))
-                .usingAttributes(NOT_LIKE, Car_.name)
+                .with(NOT_LIKE, Car_.name)
                 .build().getResultList();
         assertThat(carsFound).isNotNull().hasSize(2)
                 .extracting("name")
@@ -541,7 +540,7 @@ public class CriteriaByExampleIt {
 
         carsFound = carService.exampleBuilder
                 .of(new Car().setName("model%"))
-                .usingAttributes(NOT_LIKE_IGNORE_CASE, Car_.name)
+                .with(NOT_LIKE_IGNORE_CASE, Car_.name)
                 .build().getResultList();
         assertThat(carsFound).isNotNull().hasSize(2)
                 .extracting("name")
@@ -549,7 +548,7 @@ public class CriteriaByExampleIt {
 
         carsFound = carService.exampleBuilder
                 .of(new Car().setName("model%"))
-                .usingAttributes(LIKE_IGNORE_CASE, Car_.name)
+                .with(LIKE_IGNORE_CASE, Car_.name)
                 .build().getResultList();
         assertThat(carsFound).isNotNull().hasSize(2)
                 .extracting("name")
@@ -557,7 +556,7 @@ public class CriteriaByExampleIt {
 
         carsFound = carService.exampleBuilder
                 .of(new Car().setName("Sentra"))
-                .usingAttributes(NOT_EQ, Car_.name)
+                .with(NOT_EQ, Car_.name)
                 .build().getResultList();
         assertThat(carsFound).isNotNull().hasSize(3)
                 .extracting("name")
@@ -565,7 +564,7 @@ public class CriteriaByExampleIt {
 
         carsFound = carService.exampleBuilder
                 .of(new Car().setName("sentra"))
-                .usingAttributes(NOT_EQ_IGNORE_CASE, Car_.name)
+                .with(NOT_EQ_IGNORE_CASE, Car_.name)
                 .build().getResultList();
         assertThat(carsFound).isNotNull().hasSize(3)
                 .extracting("name")
@@ -579,7 +578,7 @@ public class CriteriaByExampleIt {
         ComparisonOperation operation = null;
         Car car = (Car) crudService
                 .exampleBuilder.of(carExample)
-                .usingAttributes(operation, Car_.model)
+                .with(operation, Car_.model)
                 .build()
                 .getSingleResult();
         assertThat(car).isNotNull()

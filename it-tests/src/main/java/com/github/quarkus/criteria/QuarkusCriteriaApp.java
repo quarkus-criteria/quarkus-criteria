@@ -155,10 +155,10 @@ car_sales_point:
         CarSalesPoint example = new CarSalesPoint(new Car(), salesPoint);
         return carSalesPointCrud
                 .exampleBuilder.of(example)
-                .usingCriteria(carSalesPointCrud.criteria()
+                .withCriteria(carSalesPointCrud.criteria()
                         .distinct()
                         .orderAsc(CarSalesPoint_.carSalesPointId))
-                .usingAttributes(CarSalesPoint_.salesPoint)
+                .with(CarSalesPoint_.salesPoint)
                         .build().fetch(CarSalesPoint_.salesPoint)
                 .getResultList();
     }
