@@ -48,10 +48,7 @@ public class ExampleBuilderWithDsl<T extends PersistenceEntity> {
      * @return A criteria populated with restrictions based on example entity
      */
     public Criteria<T, ?> build() {
-        if (!exampleBuilderDsl.hasRestrictions) {
-            return with().build();
-        }
-        return exampleBuilderDsl.criteria;
+        return exampleBuilderDsl.build();
     }
 
     ExampleBuilderWithDsl addExampleRestrictions(ComparisonOperation comparisonOperation, Attribute<T, ?>[] usingAttributes) {
