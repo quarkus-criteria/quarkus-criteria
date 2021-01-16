@@ -2,8 +2,8 @@ package com.gihub.quarkus.criteria.deployment;
 
 import com.github.quarkus.criteria.runtime.criteria.BaseCriteriaSupport;
 import com.github.quarkus.criteria.runtime.criteria.example.ExampleBuilder;
-import com.github.quarkus.criteria.runtime.criteria.example.ExampleBuilderDsl;
-import com.github.quarkus.criteria.runtime.criteria.example.ExampleBuilderWithDsl;
+import com.github.quarkus.criteria.runtime.criteria.example.WithCriteriaDsl;
+import com.github.quarkus.criteria.runtime.criteria.example.ExampleDsl;
 import com.github.quarkus.criteria.runtime.service.CrudService;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;
@@ -80,7 +80,7 @@ public class QuarkusCriteriaProcessor {
                 .collect(Collectors.toList());
 
         classesToRegisterForReflection.addAll(Arrays.asList(BaseCriteriaSupport.class.getName(), CrudService.class.getName(),
-                ExampleBuilder.class.getName(), ExampleBuilderDsl.class.getName(), ExampleBuilderWithDsl.class.getName()));
+                ExampleBuilder.class.getName(), WithCriteriaDsl.class.getName(), ExampleDsl.class.getName()));
         reflectiveClassBuildItemProducer.produce(
                 new ReflectiveClassBuildItem(false, false, classesToRegisterForReflection
                         .toArray(new String[classesToRegisterForReflection.size()])));

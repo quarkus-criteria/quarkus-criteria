@@ -191,7 +191,6 @@ public class CriteriaByExampleIt {
                 .contains("Sentra", "SE", new Brand(2L));//brand id=2 is nissan
     }
 
-
     @Test
     @DataSet("cars-full.yml")
     public void shouldFindCarByBrandName() {

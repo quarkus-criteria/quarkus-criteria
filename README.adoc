@@ -341,7 +341,7 @@ public class CarCriteria extends BaseCriteriaSupport<Car> {
      */
     public Double getTotalPriceByModel(String model) {
         return criteria()
-                 .select(Double.class, sum(Car_.price))
+                .select(Double.class, sum(Car_.price))
                 .likeIgnoreCase(Car_.model, model)
                 .getSingleResult();
     }
@@ -358,7 +358,7 @@ You can query by example using `exampleBuilder`:
  Car carExample = new Car().model("Ferrari");
  List<Car> cars = carService
       .exampleBuilder.of(carExample)
-      .usingAttributes(Car_.model) <1>
+      .with(Car_.model) <1>
       .build()
       .getResultList();
 
@@ -372,7 +372,7 @@ You can also choice the https://github.com/quarkus-criteria/quarkus-criteria/blo
 Car carExample = new Car().setModel("%rrari");
 List<Car> cars = carService
         .exampleBuilder.of(carExample)
-        .usingAttributes(ComparisonOperation.LIKE_IGNORE_CASE, Car_.model)
+        .with(ComparisonOperation.LIKE_IGNORE_CASE, Car_.model)
         .build()
         .getResultList();
 ----
@@ -384,7 +384,7 @@ If no comparisonOperation is provided then `EQ` will be used.
  Car carExample = new Car().model("Ferrari");
  List<Car> cars = carService
       .exampleBuilder.of(carExample)
-      .usingAttributes(Car_.model)
+      .with(Car_.model)
       .build()
       .getResultList();
 
@@ -398,7 +398,7 @@ Car carExample = new Car().setModel("porche").setName("%avenger");
 List<Car> cars = crudService
         .exampleBuilder
         .of(carExample)
-        .usingAttributes(ComparisonOperation.LIKE_IGNORE_CASE, Car_.name, Car_.model)
+        .with(ComparisonOperation.LIKE_IGNORE_CASE, Car_.name, Car_.model)
         .build()
         .getResultList();
 ----
@@ -434,7 +434,7 @@ CarSalesPoint carSalesPointExample = new CarSalesPoint().setSalesPoint(salesPoin
 
 List<CarSalesPoint> carSalesPointsFound = carSalesPointCrud
         .exampleBuilder.of(carSalesPointExample)
-        .usingAttributes(SalesPoint_.address)
+        .with(SalesPoint_.address)
         .build()
         .distinct()
         .fetch(CarSalesPoint_.salesPoint) <1>
@@ -460,7 +460,7 @@ Brand brandExample = new Brand().setCars(cars);
 
 List<Brand> brands = brandCrud.exampleBuilder
         .of(brandExample)
-        .usingAttributes(EQ, SalesPoint_.address)
+        .with(EQ, SalesPoint_.address)
         .build()
         .distinct()
         .getResultList();
@@ -502,9 +502,9 @@ Car carExample = new Car().setModel("SE").setName("%tra")
         .setBrand(brand);
 Car car = (Car) carService
         .exampleBuilder.of(carExample)
-        .usingAttributes(Car_.model) //EQ
-        .usingAttributes(LIKE_IGNORE_CASE, Brand_.name, Car_.name)
-        .usingAttributes(LT_OR_EQ, Car_.price)
+        .with(Car_.model) //EQ
+        .with(LIKE_IGNORE_CASE, Brand_.name, Car_.name)
+        .with(LT_OR_EQ, Car_.price)
         .build()
         .fetch(Car_.brand)
         .getSingleResult();

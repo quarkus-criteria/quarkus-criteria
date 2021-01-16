@@ -115,7 +115,7 @@ car_sales_point:
     public int run(String... args) {
         try {
             RiderDSL.withConnection(dataSource.getConnection())
-                    .withDataSetConfig(new DataSetConfig("cars.yml"))
+                    .withDataSetConfig(new DataSetConfig("/datasets/cars.yml"))
                     .createDataSet();
 
             System.out.println("======================================================================================");
