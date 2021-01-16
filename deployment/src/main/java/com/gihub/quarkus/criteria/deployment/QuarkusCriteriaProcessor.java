@@ -2,8 +2,8 @@ package com.gihub.quarkus.criteria.deployment;
 
 import com.github.quarkus.criteria.runtime.criteria.BaseCriteriaSupport;
 import com.github.quarkus.criteria.runtime.criteria.example.ExampleBuilder;
-import com.github.quarkus.criteria.runtime.criteria.example.WithCriteriaDsl;
 import com.github.quarkus.criteria.runtime.criteria.example.ExampleDsl;
+import com.github.quarkus.criteria.runtime.criteria.example.WithCriteriaDsl;
 import com.github.quarkus.criteria.runtime.service.CrudService;
 import io.quarkus.arc.deployment.AnnotationsTransformerBuildItem;
 import io.quarkus.arc.deployment.BeanRegistrationPhaseBuildItem;

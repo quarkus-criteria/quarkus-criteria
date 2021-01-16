@@ -10,6 +10,7 @@ import com.github.quarkus.criteria.service.CarService;
 import io.quarkus.test.junit.QuarkusTest;
 import org.apache.deltaspike.data.api.criteria.Criteria;
 import org.assertj.core.api.AssertionsForClassTypes;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import javax.inject.Inject;
@@ -585,6 +586,165 @@ public class CriteriaByExampleIt {
                 .contains("Model S");
     }
 
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldFindCarByModelOrName() {
+        Car carExample = new Car()
+                .setName("Fusion")
+                .setModel("S");
+        List<Car> cars = crudService
+                .exampleBuilder.of(carExample)
+                .with(Car_.name).or(EQ, Car_.model)
+                .build()
+                .getResultList();
+        assertThat(cars).isNotNull()
+                .extracting(c -> c.getName())
+                .contains("Model S", "Fusion");
+    }
 
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldFindCarByModelOrNameOrBrandName() {
+        Car carExample = new Car()
+                .setName("Fusion")
+                .setModel("S")
+                .setBrand(new Brand().setName("Nissan"));
+
+        List<Car> cars = crudService
+                .exampleBuilder.of(carExample)
+                .with(Car_.name)
+                .or(EQ, Car_.model).or(EQ, Brand_.name)
+                .build()
+                .getResultList();
+        assertThat(cars).isNotNull()
+                .extracting(c -> c.getName())
+                .contains("Model S", "Fusion", "Sentra")
+                .doesNotContain("Model X");
+    }
+
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldFindCarByPriceOrModelOrNameOrBrandName() {
+        Car carExample = new Car()
+                .setName("Fusion")
+                .setModel("S")
+                .setPrice(10.000D)
+                .setBrand(new Brand().setName("Nissan"));
+
+        List<Car> cars = crudService
+                .exampleBuilder.of(carExample)
+                .with(GT_OR_EQ, Car_.price)
+                .or(Car_.name, Car_.model, Brand_.name)
+                .build()
+                .getResultList();
+        assertThat(cars).isNotNull()
+                .extracting(c -> c.getName())
+                .contains("Fusion", "Sentra", "Model S")
+                .doesNotContain("Model X");
+    }
+
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldFindCarByModelOrNameOrSalePointAddress() {
+        Car carExample = new Car()
+                .setName("Fusion")
+                .setModel("S");
+        SalesPoint salesPoint = new SalesPoint()
+                .setAddress("Tesla HQ address");
+        CarSalesPoint carSalesPoint = new CarSalesPoint(new Car(), salesPoint);
+        carExample.setCarSalesPoints(List.of(carSalesPoint));
+
+        List<Car> cars = crudService
+                .exampleBuilder.of(carExample)
+                .with(Car_.name)
+                .or(Car_.model, SalesPoint_.address)
+                .build()
+                .distinct()
+                .getResultList();
+        assertThat(cars).isNotNull()
+                .extracting(c -> c.getName())
+                .contains("Fusion", "Model X", "Model S")
+                .doesNotContain("Sentra");
+    }
+
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldFindCarByModelOrNameOrBrandUsingMultipleCriteria() {
+        Car carExample = new Car()
+                .setName("Fusion");
+        Criteria byName = crudService
+                .exampleBuilder.of(carExample)
+                .build();
+
+        carExample = new Car()
+                .setModel("S");
+        Criteria byModel = crudService
+                .exampleBuilder.of(carExample)
+                .build();
+
+        carExample = new Car()
+                .setBrand(new Brand().setName("Nissan"));
+        Criteria byBrand = crudService
+                .exampleBuilder.of(carExample)
+                .with(Brand_.name)
+                .build();
+
+        List<Car> cars = carService.criteria()
+                .or(byName, byModel, byBrand)
+                .getResultList();
+
+        assertThat(cars).isNotNull()
+                .extracting(c -> c.getName())
+                .contains("Model S", "Fusion", "Sentra")
+                .doesNotContain("Model X");
+    }
+
+    /* @Test
+    @DataSet("cars-full.yml")
+    public void shouldFindCarByNameOrModelOrSalesPointAddressAndBrandName() {
+        Car carExample = new Car()
+                .setName("Fusion")
+                .setModel("S")
+                .setBrand(new Brand().setName("%ssan"));
+        SalesPoint salesPoint = new SalesPoint()
+                .setAddress("Tesla%");
+        CarSalesPoint carSalesPoint = new CarSalesPoint(new Car(), salesPoint);
+        carExample.setCarSalesPoints(List.of(carSalesPoint));
+        List<Car> cars =  crudService
+                .exampleBuilder.of(carExample)
+                .with(LIKE, Brand_.name)
+                .with(Car_.name)
+                .or(LIKE_IGNORE_CASE, SalesPoint_.address)
+                .or(Car_.model)
+                .build()
+                .distinct()
+                .getResultList();
+        assertThat(cars).isNotNull()
+                .extracting(c -> c.getName())
+                .contains("Model S", "Fusion", "Sentra", "Model X");
+    }
+
+    /*
+    @Test
+    @DataSet("cars-full.yml")
+    public void shouldFindCarByModelOrNameOrBrandNameOrSalesPointAddressUsingDifferentOperation() {
+        Car carExample = new Car()
+                .setName("Fusion")
+                .setModel("S")
+                .setBrand(new Brand().setName("%ssan"));
+        SalesPoint salesPoint = new SalesPoint()
+                .setAddress("Tesla%");
+        CarSalesPoint carSalesPoint = new CarSalesPoint(new Car(), salesPoint);
+        carExample.setCarSalesPoints(List.of(carSalesPoint));
+        List<Car> cars =  crudService
+                .exampleBuilder.of(carExample)
+                .or(Car_.name, Car_.model)
+                .or(LIKE_IGNORE_CASE, Brand_.name, SalesPoint_.address)
+                .build()
+                .getResultList();
+        assertThat(cars).isNotNull()
+                .extracting(c -> c.getName())
+                .contains("Model S", "Fusion", "Sentra", "Model X");
+    }*/
 
 }

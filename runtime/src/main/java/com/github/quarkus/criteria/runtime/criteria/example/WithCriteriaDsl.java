@@ -57,30 +57,4 @@ public class WithCriteriaDsl<T extends PersistenceEntity> {
         return exampleDsl.with(comparisonOperation, exampleAttributes);
     }
 
-    /**
-     * A criteria with <b>or</b> clause will be created between <code>leftSide</code> and <code>rightSide</code> attributes from the example entity and provided attributes using <b>EQ</b> operation.
-     *
-     * @param leftSide             first attribute to be considered in the or expression
-     * @param rightSide            second attribute to be considered in the or expression
-     * @param additionalAttributes additional right hand side attributes from example entity to consider.
-     */
-    public ExampleDsl<T> or(final Attribute<T, ?> leftSide, final Attribute<T, ?> rightSide, final Attribute<T, ?>... additionalAttributes) {
-        return exampleDsl.or(ComparisonOperation.EQ, leftSide, rightSide, additionalAttributes);
-    }
-
-
-    /**
-     * A criteria with <b>or</b> clause will be created between <code>leftSide</code> and <code>rightSide</code> attributes from example entity
-     * using <code>comparisonOperation</code> to compare the attribute's values.
-     * It will use comparisonOperation for comparing {@code exampleAttributes}.
-     *
-     * @param comparisonOperation  the operation to be used while comparing example attributes.
-     * @param leftSide             first attribute to be considered in the or expression
-     * @param rightSide            second attribute to be considered in the or expression
-     * @param additionalAttributes additional right hand side attributes from example entity to consider.
-     */
-    public ExampleDsl<T> or(ComparisonOperation comparisonOperation, final Attribute<T, ?> leftSide, final Attribute<T, ?> rightSide, final Attribute<T, ?>... additionalAttributes) {
-        return exampleDsl.or(comparisonOperation, leftSide, rightSide, additionalAttributes);
-    }
-
 }

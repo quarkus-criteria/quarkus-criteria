@@ -13,15 +13,13 @@ import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.util.*;
 import java.util.logging.Logger;
-import java.util.stream.Collectors;
 
-import static com.github.quarkus.criteria.runtime.model.ComparisonOperation.IS_NULL;
-import static com.github.quarkus.criteria.runtime.model.ComparisonOperation.NOT_NULL;
+import static com.github.quarkus.criteria.runtime.model.ComparisonOperation.*;
 import static java.lang.String.format;
 
 /**
  * This class is responsible for creating the criteria restrictions
- * 
+ *
  * @param <T> Example entity type
  */
 public class ExampleDsl<T extends PersistenceEntity> {
@@ -32,8 +30,6 @@ public class ExampleDsl<T extends PersistenceEntity> {
     private T example;
     private EntityManager entityManager;
     private boolean hasRestrictions;
-    private List criteriaRestrictions = new ArrayList<>();
-    private boolean orEnabled;//or restriction activated
     Criteria<T, ?> criteria;
 
     public ExampleDsl(T example, EntityManager entityManager) {
@@ -52,7 +48,7 @@ public class ExampleDsl<T extends PersistenceEntity> {
      * @param exampleAttributes attributes from example entity to consider. If no attribute is provided then non null attributes will be used.
      */
     public ExampleDsl<T> with(final Attribute<T, ?>... exampleAttributes) {
-        return with(ComparisonOperation.EQ, exampleAttributes);
+        return with(EQ, exampleAttributes);
     }
 
 
@@ -64,49 +60,27 @@ public class ExampleDsl<T extends PersistenceEntity> {
      * @param exampleAttributes   attributes from example entity to consider. If no attribute is provided then non null attributes will be used.
      */
     public ExampleDsl<T> with(ComparisonOperation comparisonOperation, Attribute<T, ?>... exampleAttributes) {
-        resetRestrictions();
         if (comparisonOperation == null) {
-            comparisonOperation = ComparisonOperation.EQ;
+            comparisonOperation = EQ;
         }
         return addRestrictions(comparisonOperation, exampleAttributes);
     }
 
-    /**
-     * A criteria with <b>or</b> clause will be created between <code>leftSide</code> and <code>rightSide</code> attributes from the example entity using <b>EQ</b> operation.
-     *
-     * @param leftSide             first attribute to be considered in the or expression
-     * @param rightSide            second attribute to be considered in the or expression
-     * @param additionalAttributes additional right hand side attributes from example entity to consider.
-     */
-    public ExampleDsl<T> or(final Attribute<T, ?> leftSide, final Attribute<T, ?> rightSide, final Attribute<T, ?>... additionalAttributes) {
-        return or(ComparisonOperation.EQ, leftSide, rightSide, additionalAttributes);
+    public ExampleDsl<T> or(Attribute<T, ?>... exampleAttributes) {
+        return or(EQ, exampleAttributes);
     }
 
-
-    /**
-     * A criteria with <b>or</b> clause will be created between <code>leftSide</code> and <code>rightSide</code> attributes from example entity
-     * using <code>comparisonOperation</code> to compare the attribute's values.
-     * It will use comparisonOperation for comparing {@code exampleAttributes}.
-     *
-     * @param comparisonOperation  the operation to be used while comparing example attributes.
-     * @param leftSide             first attribute to be considered in the or expression
-     * @param rightSide            second attribute to be considered in the or expression
-     * @param additionalAttributes additional right hand side attributes from example entity to consider.
-     */
-    public ExampleDsl<T> or(ComparisonOperation comparisonOperation, final Attribute<T, ?> leftSide, final Attribute<T, ?> rightSide, final Attribute<T, ?>... additionalAttributes) {
-        resetRestrictions();
-        activateOrClause();
-        if (comparisonOperation == null) {
-            comparisonOperation = ComparisonOperation.EQ;
+    public ExampleDsl<T> or(ComparisonOperation comparisonOperation, Attribute<T, ?>... exampleAttributes) {
+        Criteria previousCriteria = this.criteria;
+        List<Criteria> orCriterias = new LinkedList<>();
+        orCriterias.add(previousCriteria);
+        for (Attribute<T, ?> exampleAttribute : exampleAttributes) {
+            this.criteria = new QueryCriteria(example.getClass(), example.getClass(), entityManager);
+            orCriterias.add(with(comparisonOperation, exampleAttribute).criteria);
         }
-        if (leftSide == null || rightSide == null) {
-            throw new IllegalArgumentException("Both right and left hand side attributes are required in the 'or' clause.");
-        }
-        List<Attribute<T, ?>> attributes = Arrays.asList(leftSide, rightSide);
-        if (additionalAttributes != null && additionalAttributes.length > 0) {
-            attributes.addAll(Arrays.stream(additionalAttributes).collect(Collectors.toList()));
-        }
-        return addRestrictions(comparisonOperation, attributes.toArray(new Attribute[attributes.size()]));
+        this.criteria = new QueryCriteria(example.getClass(), example.getClass(), entityManager)
+                .or(orCriterias);
+        return this;
     }
 
     /**
@@ -119,28 +93,14 @@ public class ExampleDsl<T extends PersistenceEntity> {
         return criteria;
     }
 
-    ExampleDsl addRestrictions(ComparisonOperation comparisonOperation, Attribute<T, ?>[] usingAttributes) {
+    private ExampleDsl addRestrictions(ComparisonOperation comparisonOperation, Attribute<T, ?>[] usingAttributes) {
         if (usingAttributes == null || usingAttributes.length == 0) {
             usingAttributes = exampleAttributes.toArray(new Attribute[0]);
         }
         for (Attribute usingAttribute : usingAttributes) {
-            Criteria restriction = createRestriction(comparisonOperation, usingAttribute);
-            if (orEnabled && restriction != null) {
-                criteriaRestrictions.add(restriction);
-            }
-        }
-        if (orEnabled && !criteriaRestrictions.isEmpty()) {
-            createOrRestriction();
+            createRestriction(comparisonOperation, usingAttribute);
         }
         return this;
-    }
-
-    private void createOrRestriction() {
-        if (criteriaRestrictions.size() == 1) {
-            LOG.warning("For creating OR restrictions more than one non null field must be provided in the 'or' expression.\n Example:  exampleBuilder.of(example)" +
-                    ".or(Entity_.field1, Entity_.field1).");
-        }
-        criteria.or(criteriaRestrictions);
     }
 
     private Criteria createRestriction(ComparisonOperation comparisonOperation, Attribute usingAttribute) {
@@ -153,7 +113,6 @@ public class ExampleDsl<T extends PersistenceEntity> {
                 return addSingularRestriction(usingAttribute, comparisonOperation);
             } else if (usingAttribute instanceof PluralAttribute) {
                 if (!exampleAttributes.contains(usingAttribute)) {
-                    //TODO return criteria
                     addAssociationRestriction(usingAttribute, comparisonOperation);
                 } else {
                     final Object value = field.get(example);
@@ -161,7 +120,7 @@ public class ExampleDsl<T extends PersistenceEntity> {
                         LOG.warning(format("Ignoring example attribute %s for entity %s because it's value %s is not a Collection.", usingAttribute.getName(), example.getClass().getName(), value));
                         return null;
                     }
-                    return createPluralRestriction(usingAttribute, (Collection) value);
+                    return createPluralRestriction(criteria, usingAttribute, (Collection) value);
                 }
             }
         } catch (IllegalAccessException e) {
@@ -170,8 +129,7 @@ public class ExampleDsl<T extends PersistenceEntity> {
         return criteria;
     }
 
-    void addAssociationRestriction(Attribute attribute, ComparisonOperation operation) {
-        //TODO return criteria
+    private void addAssociationRestriction(Attribute attribute, ComparisonOperation operation) {
         try {
             visitedEntities.clear();
             addAssociationRestrictionRecursion(example, criteria, exampleAttributes, attribute, operation, new HashSet<>());
@@ -182,7 +140,7 @@ public class ExampleDsl<T extends PersistenceEntity> {
 
     }
 
-    void addAssociationRestrictionRecursion(Object exampleValue, Criteria<?, ?> criteria, Set<Attribute<?, ?>> exampleAttributes, Attribute attribute, ComparisonOperation operation, Set<JoinInfo> joinInfoList) throws IllegalAccessException {
+    private void addAssociationRestrictionRecursion(Object exampleValue, Criteria<?, ?> criteria, Set<Attribute<?, ?>> exampleAttributes, Attribute attribute, ComparisonOperation operation, Set<JoinInfo> joinInfoList) throws IllegalAccessException {
         Optional<Attribute<?, ?>> exampleAttributeOptional = exampleAttributes.stream()
                 .filter(exampleAttribute -> exampleAttribute.equals(attribute))
                 .findFirst();
@@ -224,16 +182,13 @@ public class ExampleDsl<T extends PersistenceEntity> {
                 attrField.setAccessible(true);
                 Object attrValue = attrField.get(exampleValue);
                 if (attrValue instanceof Collection) {
-                    createPluralRestriction(attribute, (Collection) attrValue);
+                    createPluralRestriction(criteria, attribute, (Collection) attrValue);
                 } else {
                     createSingularRestriction(criteria, (SingularAttribute) attribute, operation, attrValue);
                 }
             }
         }
-
     }
-
-
 
     private void addJoin(Attribute exampleAttribute, Criteria criteria, Criteria joinCriteria) {
         final boolean isCollection = exampleAttribute instanceof PluralAttribute;
@@ -244,7 +199,7 @@ public class ExampleDsl<T extends PersistenceEntity> {
         }
     }
 
-    private Criteria createPluralRestriction(final Attribute<T, ?> attribute, final Collection values) {
+    private Criteria createPluralRestriction(final Criteria criteria, final Attribute<T, ?> attribute, final Collection values) {
         hasRestrictions = true;
         if (values == null || values.isEmpty()) {
             LOG.warning(format("Ignoring example attribute %s for entity %s because it's value is null", attribute.getName(), example.getClass().getName()));
@@ -258,8 +213,8 @@ public class ExampleDsl<T extends PersistenceEntity> {
         if (LOG.isLoggable(Level.DEBUG)) {
             LOG.log(Level.DEBUG, format("Adding an 'in'restriction on attribute %s using values %s.", attribute.getName(), values));
         }
-        Collection<PersistenceEntity> association = (Collection<PersistenceEntity>) values;
-        SingularAttribute id = entityManager.getMetamodel().entity(listAttribute.getElementType().getJavaType()).getId(association.iterator().next().getId().getClass());
+        final Collection<PersistenceEntity> association = (Collection<PersistenceEntity>) values;
+        final SingularAttribute id = entityManager.getMetamodel().entity(listAttribute.getElementType().getJavaType()).getId(association.iterator().next().getId().getClass());
         List<Serializable> ids = new ArrayList<>();
         for (PersistenceEntity persistenceEntity : association) {
             ids.add(persistenceEntity.getId());
@@ -303,77 +258,57 @@ public class ExampleDsl<T extends PersistenceEntity> {
 
     private Criteria createSingularRestriction(Criteria criteria, SingularAttribute attribute, ComparisonOperation operation, Object value) {
         hasRestrictions = true;
-        Criteria restrictionCriteria;
-        if (isOrActivated()) {
-            Class attrType = attribute.isAssociation() ? attribute.getJavaType() : attribute.getDeclaringType().getJavaType();
-            restrictionCriteria = new QueryCriteria(attrType, attrType, entityManager);
-        } else {
-            restrictionCriteria = criteria;
-        }
         switch (operation) {
             case EQ:
-                restrictionCriteria.eq(attribute, value);
+                criteria.eq(attribute, value);
                 break;
             case EQ_IGNORE_CASE:
-                restrictionCriteria.eqIgnoreCase(attribute, value.toString());
+                criteria.eqIgnoreCase(attribute, value.toString());
                 break;
             case NOT_EQ:
-                restrictionCriteria.notEq(attribute, value);
+                criteria.notEq(attribute, value);
                 break;
             case NOT_EQ_IGNORE_CASE:
-                restrictionCriteria.notEqIgnoreCase(attribute, value.toString());
+                criteria.notEqIgnoreCase(attribute, value.toString());
                 break;
             case GT:
-                restrictionCriteria.gt(attribute, (Comparable) value);
+                criteria.gt(attribute, (Comparable) value);
                 break;
             case GT_OR_EQ:
-                restrictionCriteria.gtOrEq(attribute, (Comparable) value);
+                criteria.gtOrEq(attribute, (Comparable) value);
                 break;
             case LT:
-                restrictionCriteria.lt(attribute, (Comparable) value);
+                criteria.lt(attribute, (Comparable) value);
                 break;
             case LT_OR_EQ:
-                restrictionCriteria.ltOrEq(attribute, (Comparable) value);
+                criteria.ltOrEq(attribute, (Comparable) value);
                 break;
             case IS_NULL:
-                restrictionCriteria.isNull(attribute);
+                criteria.isNull(attribute);
                 break;
             case NOT_NULL:
-                restrictionCriteria.notNull(attribute);
+                criteria.notNull(attribute);
                 break;
             case LIKE:
-                restrictionCriteria.like(attribute, value.toString());
+                criteria.like(attribute, value.toString());
                 break;
             case LIKE_IGNORE_CASE:
-                restrictionCriteria.likeIgnoreCase(attribute, value.toString());
+                criteria.likeIgnoreCase(attribute, value.toString());
                 break;
             case NOT_LIKE:
-                restrictionCriteria.notLike(attribute, value.toString());
+                criteria.notLike(attribute, value.toString());
                 break;
             case NOT_LIKE_IGNORE_CASE:
-                restrictionCriteria.notLikeIgnoreCase(attribute, value.toString());
+                criteria.notLikeIgnoreCase(attribute, value.toString());
                 break;
             case IS_EMPTY:
-                restrictionCriteria.empty(attribute);
+                criteria.empty(attribute);
                 break;
             case NOT_EMPTY:
-                restrictionCriteria.notEmpty(attribute);
+                criteria.notEmpty(attribute);
                 break;
         }
-        return restrictionCriteria;
-    }
-
-    private boolean isOrActivated() {
-        return orEnabled;
-    }
-
-    private void resetRestrictions() {
-        orEnabled = false;
-        criteriaRestrictions.clear();
-    }
-
-    private void activateOrClause() {
-        orEnabled = true;
+        return criteria;
     }
 
     private Set<Attribute<?, ?>> resolveExampleEntityAttributes() {
