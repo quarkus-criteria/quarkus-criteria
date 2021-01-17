@@ -197,7 +197,6 @@ public class CriteriaByExampleIt {
     public void shouldFindCarByBrandName() {
         Brand brand = new Brand().setName("niss%");
         Car carExample = new Car().setBrand(brand);
-        carExample.setBrand(brand);//brand = Nissan
 
         List<Car> carsFound = carService
                 .exampleBuilder.of(carExample)
@@ -342,7 +341,7 @@ public class CriteriaByExampleIt {
                 .contains("Ford", "Tesla");
     }
 
-    @Test
+    //@Test
     @DataSet("cars-full.yml")
     public void shouldListBrandsByCarSalesPoint() {
         List<CarSalesPoint> carSalesPoints = List.of(new CarSalesPoint(new CarSalesPointId(1, new SalesPointPK(1L, 2L))),
@@ -351,9 +350,10 @@ public class CriteriaByExampleIt {
         Car carExample = new Car().setCarSalesPoints(carSalesPoints);
         Brand exampleBrand = new Brand()
                 .setCars(Set.of(carExample));
-        brandCrud.exampleBuilder.of(exampleBrand)
+        List<Brand> brands = brandCrud.exampleBuilder.of(exampleBrand)
                 .with(Car_.carSalesPoints)
-                .build();
+                .build().getResultList();
+        assertThat(brands).isNotNull();
     }
 
     @Test
@@ -599,7 +599,8 @@ public class CriteriaByExampleIt {
                 .getResultList();
         assertThat(cars).isNotNull()
                 .extracting(c -> c.getName())
-                .contains("Model S", "Fusion");
+                .contains("Model S", "Fusion")
+                .doesNotContain("Model X", "Sentra");
     }
 
     @Test
@@ -699,7 +700,7 @@ public class CriteriaByExampleIt {
                 .doesNotContain("Model X");
     }
 
-    /* @Test
+    @Test
     @DataSet("cars-full.yml")
     public void shouldFindCarByNameOrModelOrSalesPointAddressAndBrandName() {
         Car carExample = new Car()
@@ -712,8 +713,7 @@ public class CriteriaByExampleIt {
         carExample.setCarSalesPoints(List.of(carSalesPoint));
         List<Car> cars =  crudService
                 .exampleBuilder.of(carExample)
-                .with(LIKE, Brand_.name)
-                .with(Car_.name)
+                .with(LIKE, Car_.name, Brand_.name)
                 .or(LIKE_IGNORE_CASE, SalesPoint_.address)
                 .or(Car_.model)
                 .build()
@@ -723,28 +723,5 @@ public class CriteriaByExampleIt {
                 .extracting(c -> c.getName())
                 .contains("Model S", "Fusion", "Sentra", "Model X");
     }
-
-    /*
-    @Test
-    @DataSet("cars-full.yml")
-    public void shouldFindCarByModelOrNameOrBrandNameOrSalesPointAddressUsingDifferentOperation() {
-        Car carExample = new Car()
-                .setName("Fusion")
-                .setModel("S")
-                .setBrand(new Brand().setName("%ssan"));
-        SalesPoint salesPoint = new SalesPoint()
-                .setAddress("Tesla%");
-        CarSalesPoint carSalesPoint = new CarSalesPoint(new Car(), salesPoint);
-        carExample.setCarSalesPoints(List.of(carSalesPoint));
-        List<Car> cars =  crudService
-                .exampleBuilder.of(carExample)
-                .or(Car_.name, Car_.model)
-                .or(LIKE_IGNORE_CASE, Brand_.name, SalesPoint_.address)
-                .build()
-                .getResultList();
-        assertThat(cars).isNotNull()
-                .extracting(c -> c.getName())
-                .contains("Model S", "Fusion", "Sentra", "Model X");
-    }*/
 
 }

@@ -31,6 +31,7 @@ public class ExampleDsl<T extends PersistenceEntity> {
     private EntityManager entityManager;
     private boolean hasRestrictions;
     Criteria<T, ?> criteria;
+    private boolean exampleAttributeFound;
 
     public ExampleDsl(T example, EntityManager entityManager) {
         if (example == null) {
@@ -113,7 +114,7 @@ public class ExampleDsl<T extends PersistenceEntity> {
                 return addSingularRestriction(usingAttribute, comparisonOperation);
             } else if (usingAttribute instanceof PluralAttribute) {
                 if (!exampleAttributes.contains(usingAttribute)) {
-                    addAssociationRestriction(usingAttribute, comparisonOperation);
+                    return addAssociationRestriction(usingAttribute, comparisonOperation);
                 } else {
                     final Object value = field.get(example);
                     if (!(value instanceof Collection)) {
@@ -129,66 +130,83 @@ public class ExampleDsl<T extends PersistenceEntity> {
         return criteria;
     }
 
-    private void addAssociationRestriction(Attribute attribute, ComparisonOperation operation) {
+    private Criteria<T, ?> addAssociationRestriction(Attribute attribute, ComparisonOperation operation) {
         try {
             visitedEntities.clear();
-            addAssociationRestrictionRecursion(example, criteria, exampleAttributes, attribute, operation, new HashSet<>());
+            exampleAttributeFound = Boolean.FALSE;
+            ExampleInfo exampleInfo = findExampleValue(new ExampleInfo(example, criteria), attribute, exampleAttributes);
+            if (exampleInfo != null) {
+                if (exampleInfo.value != null || NULL_OPERATIONS.contains(operation)) {
+                    Field attrField = (Field) attribute.getJavaMember();
+                    attrField.setAccessible(true);
+                    Object attrValue = attrField.get(exampleInfo.value);
+                    if (attrValue instanceof Collection) {
+                        return createPluralRestriction(exampleInfo.criteria, attribute, (Collection) attrValue);
+                    } else {
+                        return createSingularRestriction(exampleInfo.criteria, (SingularAttribute) attribute, operation, attrValue);
+                    }
+                }
+            }
         } catch (Exception e) {
             LOG.warning(format("Attribute %s or attribute type %s not found in example entity %s.",
                     attribute.getName(), attribute.getJavaMember().getDeclaringClass(), example.getClass().getName()));
         }
-
+        return criteria;
     }
 
-    private void addAssociationRestrictionRecursion(Object exampleValue, Criteria<?, ?> criteria, Set<Attribute<?, ?>> exampleAttributes, Attribute attribute, ComparisonOperation operation, Set<JoinInfo> joinInfoList) throws IllegalAccessException {
-        Optional<Attribute<?, ?>> exampleAttributeOptional = exampleAttributes.stream()
-                .filter(exampleAttribute -> exampleAttribute.equals(attribute))
-                .findFirst();
-        if (!exampleAttributeOptional.isPresent()) { //attr not found, search into entity associations
-            exampleAttributes.stream()
-                    .filter(Attribute::isAssociation)
-                    .forEach(attr -> {
-                        try {
-                            final boolean isCollection = attr.isCollection();
-                            Class<?> attrType = isCollection ? ((PluralAttribute) attr).getElementType().getJavaType() : attr.getJavaType();
-                            if (!visitedEntities.contains(attrType)) {
-                                Set<Attribute<?, ?>> attrEntityAttributes = (Set<Attribute<?, ?>>) entityManager.getMetamodel().entity(attrType).getAttributes();
-                                visitedEntities.add(attrType);
-                                Field field = (Field) attr.getJavaMember();
-                                field.setAccessible(true);
-                                Object associationValue = null;
-                                if (isCollection) {
-                                    Collection collection = (Collection) field.get(exampleValue);
-                                    if (!collection.isEmpty()) {
-                                        associationValue = collection.iterator().next();
-                                    }
+    private ExampleInfo findExampleValue(ExampleInfo exampleInfo, Attribute attribute, Set<Attribute<?, ?>> exampleAttributes) {
+        Set<Attribute<?, ?>> associationAttributes = new HashSet<>();
+        for (Attribute<?, ?> attr : exampleAttributes) {
+            if (attr.equals(attribute)) {
+                this.exampleAttributeFound = true;
+            }
+            if (attr.isAssociation()) {
+                try {
+                    final boolean isCollection = attr.isCollection();
+                    Class<?> attrType = isCollection ? ((PluralAttribute) attr).getElementType().getJavaType() : attr.getJavaType();
+                    if (!visitedEntities.contains(attrType)) {
+                        visitedEntities.add(attrType);
+                        Set<Attribute<?, ?>> attrEntityAttributes = (Set<Attribute<?, ?>>) entityManager.getMetamodel().entity(attrType).getAttributes();
+                        if (!exampleAttributeFound) {
+                            associationAttributes.addAll(attrEntityAttributes);
+                        }
+                        Field field = (Field) attr.getJavaMember();
+                        field.setAccessible(true);
+                        Object associationValue = null;
+                        if (isCollection) {
+                            Collection collection = (Collection) field.get(exampleInfo.value);
+                            if (!collection.isEmpty()) {
+                                if (exampleAttributeFound) {
+                                    associationValue = collection;
                                 } else {
-                                    associationValue = field.get(exampleValue);
-                                }
-                                if (associationValue != null) {
-                                    final Criteria associationJoin = new QueryCriteria(attrType, attrType, entityManager);
-                                    joinInfoList.add(new JoinInfo(attr, criteria, associationJoin));
-                                    addAssociationRestrictionRecursion(associationValue, associationJoin, attrEntityAttributes, attribute, operation, joinInfoList);
+                                    associationValue = collection.iterator().next();
                                 }
                             }
-                        } catch (IllegalAccessException e) {
+                        } else {
+                            associationValue = field.get(exampleInfo.value);
                         }
-                    });
-        } else {
-            if (exampleValue != null || NULL_OPERATIONS.contains(operation)) {
-                joinInfoList.stream()
-                        .forEach(joinInfo -> addJoin(joinInfo.attribute, joinInfo.criteria, joinInfo.joinCriteria));
-                Field attrField = (Field) attribute.getJavaMember();
-                attrField.setAccessible(true);
-                Object attrValue = attrField.get(exampleValue);
-                if (attrValue instanceof Collection) {
-                    createPluralRestriction(criteria, attribute, (Collection) attrValue);
-                } else {
-                    createSingularRestriction(criteria, (SingularAttribute) attribute, operation, attrValue);
+                        if (associationValue != null) {
+                            final Criteria associationJoin = new QueryCriteria(attrType, attrType, entityManager);
+                            exampleInfo.value = associationValue;
+                            addJoin(attr, exampleInfo.criteria, associationJoin);
+                            exampleInfo.criteria = associationJoin;
+                        }
+                    }
+                } catch (IllegalAccessException | IllegalArgumentException e) {
                 }
             }
+            if (exampleAttributeFound) {
+                break;
+            }
         }
+        if (exampleAttributeFound) {
+            return exampleInfo;
+        } else if (!associationAttributes.isEmpty()) {
+            return findExampleValue(exampleInfo, attribute, associationAttributes);
+        }
+        return null;
     }
+
 
     private void addJoin(Attribute exampleAttribute, Criteria criteria, Criteria joinCriteria) {
         final boolean isCollection = exampleAttribute instanceof PluralAttribute;
@@ -199,7 +217,7 @@ public class ExampleDsl<T extends PersistenceEntity> {
         }
     }
 
-    private Criteria createPluralRestriction(final Criteria criteria, final Attribute<T, ?> attribute, final Collection values) {
+    private Criteria createPluralRestriction(final Criteria criteria, final Attribute attribute, final Collection values) {
         hasRestrictions = true;
         if (values == null || values.isEmpty()) {
             LOG.warning(format("Ignoring example attribute %s for entity %s because it's value is null", attribute.getName(), example.getClass().getName()));
@@ -318,5 +336,20 @@ public class ExampleDsl<T extends PersistenceEntity> {
             attributes = Collections.emptySet();
         }
         return attributes;
+    }
+
+    private class ExampleInfo {
+        Criteria criteria;
+        Object value;
+        List<JoinInfo> joinInfos = new ArrayList<>();
+
+        public ExampleInfo(Object value, Criteria criteria) {
+            this.criteria = criteria;
+            this.value = value;
+        }
+
+        void addJoinInfo(JoinInfo joinInfo) {
+            joinInfos.add(joinInfo);
+        }
     }
 }
