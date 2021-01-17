@@ -3,7 +3,7 @@
     <parent>
         <artifactId>quarkus-criteria-parent</artifactId>
         <groupId>com.github.quarkus-criteria</groupId>
-        <version>1.0.0-RC3-SNAPSHOT</version>
+        <version>1.0.0-RC3</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <name>Quarkus Criteria System tests</name>
@@ -215,7 +215,7 @@
 
     <repositories>
         <repository>
-            <snapshots/>
+            <snapshots />
             <id>snapshots</id>
             <name>libs-snapshot</name>
             <url>https://oss.sonatype.org/content/repositories/snapshots</url>
