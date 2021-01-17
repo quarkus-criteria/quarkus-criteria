@@ -3,7 +3,7 @@
     <parent>
         <groupId>com.github.quarkus-criteria</groupId>
         <artifactId>quarkus-criteria-parent</artifactId>
-        <version>1.0.0-RC3</version>
+        <version>1.0.0-RC4-SNAPSHOT</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
