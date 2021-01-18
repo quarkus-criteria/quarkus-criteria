@@ -7,6 +7,7 @@
 :sectlink:
 :doctype: book
 :toc: preamble
+:toclevels: 3
 :tip-caption: :bulb:
 :note-caption: :information_source:
 :important-caption: :heavy_exclamation_mark:
