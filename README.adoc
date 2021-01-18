@@ -122,7 +122,7 @@ CrudService<Car> crudService;
 
 Below are some query examples:
 
-=== List cars by brand name:
+=== List cars by brand name
 
 [source, java]
 ----
@@ -137,7 +137,7 @@ assertThat(carsFound).isNotNull().hasSize(2)
         .contains("Model S", "Model X");
 ----
 
-=== List brands by sales point address:
+=== List brands by sales point address
 
 [source, java]
 ----
@@ -157,7 +157,7 @@ assertThat(brands).isNotNull().hasSize(1)
 ----
 
 
-=== List cars by model, brand name and sales point address:
+=== List cars by model, brand name and sales point address
 
 [source, java]
 ----
@@ -217,6 +217,32 @@ Hibernate:
         )
 ----
 
+[TIP]
+====
+You can also inherit from CrudService, this way you can invoke `where`, `criteria()` and other methods directly from superclass instead of calling them via crudService instance:
+
+[source, java]
+----
+@Transactional(Transactional.TxType.SUPPORTS)
+public class CarService extends CrudService<Car> implements Serializable {
+
+ public List<CarWithNameAndPrice> getCarsAndMapToDTO() {
+        List<CarWithNameAndPrice> carsDTO = criteria()
+                .select(CarWithNameAndPrice.class, attribute(Car_.name), attribute(Car_.price)) <1>
+                .join(Car_.brand, where(Brand.class)
+                        .or(criteria(Brand.class)
+                                        .eq(Brand_.name, "Nissan"),
+                                criteria(Brand.class).eq(Brand_.name, "Tesla")))
+                .join(Car_.salesPoints, where(SalesPoint.class)
+                        .likeIgnoreCase(SalesPoint_.name, "%Tesla%")).getResultList();
+        return carsDTO;
+
+}
+----
+<1> Select fields and target DTO to map results
+
+====
+
 === Aggregation function
 
 [source, java]
@@ -256,33 +282,8 @@ assertThat(deleted).isEqualTo(10);
 assertThat(crudService.count()).isEqualTo(0L);
 ----
 
-[TIP]
-====
-You can also inherit from CrudService, this way you can invoke `where`, `criteria()` and other methods directly from superclass instead of calling them via crudService instance:
 
-[source, java]
-----
-@Transactional(Transactional.TxType.SUPPORTS)
-public class CarService extends CrudService<Car> implements Serializable {
-
- public List<CarWithNameAndPrice> getCarsAndMapToDTO() {
-        List<CarWithNameAndPrice> carsDTO = criteria()
-                .select(CarWithNameAndPrice.class, attribute(Car_.name), attribute(Car_.price)) <1>
-                .join(Car_.brand, where(Brand.class)
-                        .or(criteria(Brand.class)
-                                        .eq(Brand_.name, "Nissan"),
-                                criteria(Brand.class).eq(Brand_.name, "Tesla")))
-                .join(Car_.salesPoints, where(SalesPoint.class)
-                        .likeIgnoreCase(SalesPoint_.name, "%Tesla%")).getResultList();
-        return carsDTO;
-
-}
-----
-<1> Select fields and target DTO to map results
-
-====
-
-== Pagination
+=== Pagination
 
 [source, java]
 ----
@@ -447,7 +448,7 @@ assertThat(carsFound).isNotNull().hasSize(2)
 ----
 <1> Fetch association attribute in result list
 
-==== List brands by sales point address:
+==== List brands by sales point address
 
 [source, java]
 ----
@@ -543,7 +544,7 @@ Hibernate:
         and car0_.price<=12.999
 ----
 
-=== Using an `or` expression:
+=== Using an `or` expression
 
 [source, java]
 ----
