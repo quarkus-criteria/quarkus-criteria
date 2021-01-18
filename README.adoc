@@ -282,7 +282,7 @@ public class CarService extends CrudService<Car> implements Serializable {
 
 ====
 
-=== Pagination
+== Pagination
 
 [source, java]
 ----
@@ -327,7 +327,7 @@ For more examples see:
 ====
 
 
-=== BaseCriteriaSupport
+== BaseCriteriaSupport
 
 If you don't want CRUD support you can inherit directly from `BaseCriteriaSupport`:
 
@@ -349,7 +349,7 @@ public class CarCriteria extends BaseCriteriaSupport<Car> {
 }
 ----
 
-=== Criteria by example
+== Criteria by example
 
 You can query by example using `exampleBuilder`:
 
@@ -367,7 +367,7 @@ You can query by example using `exampleBuilder`:
 <1> select which attributes to consider from example entity, if no attribute is provided then non null properties from example entity will be considered.
 
 
-==== Comparison operation
+=== Comparison operation
 
 You can also choice the https://github.com/quarkus-criteria/quarkus-criteria/blob/master/runtime/src/main/java/com/github/quarkus/criteria/runtime/model/ComparisonOperation.java[comparison operation^] to be used when comparing example attribute value:
 
@@ -384,7 +384,7 @@ List<Car> cars = carService
 If no comparisonOperation is provided then `EQ` will be used.
 
 
-==== Multiple attributes
+=== Multiple attributes
 
 You can also provide multiple attributes:
 
@@ -421,7 +421,7 @@ Hibernate:
         )
 ----
 
-==== Associations
+=== Associations
 
 Associations will also be queried:
 
@@ -447,7 +447,7 @@ assertThat(carsFound).isNotNull().hasSize(2)
 ----
 <1> Fetch association attribute in result list
 
-===== List brands by sales point address:
+==== List brands by sales point address:
 
 [source, java]
 ----
@@ -490,7 +490,7 @@ Hibernate:
         salespoint3_.address=?
 ----
 
-==== Different operation for each attribute
+=== Different operation for each attribute
 
 [source, java]
 ----
@@ -543,7 +543,7 @@ Hibernate:
         and car0_.price<=12.999
 ----
 
-==== Using an `or` expression:
+=== Using an `or` expression:
 
 [source, java]
 ----
