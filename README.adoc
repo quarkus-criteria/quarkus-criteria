@@ -108,7 +108,7 @@ For examples below consider the following entity associations:
 
 image::entities.png[]
 
-=== Examples
+== Examples
 
 The easiest way to use quarkus criteria is via *generic injection* of `CrudService`:
 
@@ -122,7 +122,7 @@ CrudService<Car> crudService;
 
 Below are some query examples:
 
-* List cars by brand name:
+=== List cars by brand name:
 
 [source, java]
 ----
@@ -137,7 +137,7 @@ assertThat(carsFound).isNotNull().hasSize(2)
         .contains("Model S", "Model X");
 ----
 
-* List brands by sales point address:
+=== List brands by sales point address:
 
 [source, java]
 ----
@@ -157,7 +157,7 @@ assertThat(brands).isNotNull().hasSize(1)
 ----
 
 
-* List cars by model, brand name and sales point address:
+=== List cars by model, brand name and sales point address:
 
 [source, java]
 ----
@@ -217,7 +217,7 @@ Hibernate:
         )
 ----
 
-* Aggregation function
+=== Aggregation function
 
 [source, java]
 ----
@@ -227,7 +227,7 @@ Double result = criteria()
     .getSingleResult();
 ----
 
-* Count by criteria
+=== Count by criteria
 
 [source, java]
 ----
@@ -236,7 +236,7 @@ long count = crudService.count(crudService.criteria()
             .gtOrEq(Car_.price, 10000D));
 ----
 
-* Insert
+=== Insert
 
 [source, java]
 ----
@@ -247,7 +247,7 @@ List.of(new Brand().setName("Nissan"),
 
 ----
 
-* Delete in batches
+=== Delete in batches
 
 [source, java]
 ----
@@ -282,7 +282,7 @@ public class CarService extends CrudService<Car> implements Serializable {
 
 ====
 
-* Pagination
+=== Pagination
 
 [source, java]
 ----
@@ -327,7 +327,7 @@ For more examples see:
 ====
 
 
-==== BaseCriteriaSupport
+=== BaseCriteriaSupport
 
 If you don't want CRUD support you can inherit directly from `BaseCriteriaSupport`:
 
@@ -349,7 +349,7 @@ public class CarCriteria extends BaseCriteriaSupport<Car> {
 }
 ----
 
-==== Criteria by example
+=== Criteria by example
 
 You can query by example using `exampleBuilder`:
 
@@ -366,6 +366,9 @@ You can query by example using `exampleBuilder`:
 ----
 <1> select which attributes to consider from example entity, if no attribute is provided then non null properties from example entity will be considered.
 
+
+==== Comparison operation
+
 You can also choice the https://github.com/quarkus-criteria/quarkus-criteria/blob/master/runtime/src/main/java/com/github/quarkus/criteria/runtime/model/ComparisonOperation.java[comparison operation^] to be used when comparing example attribute value:
 
 [source, java]
@@ -380,16 +383,8 @@ List<Car> cars = carService
 
 If no comparisonOperation is provided then `EQ` will be used.
 
-[source, java]
-----
- Car carExample = new Car().model("Ferrari");
- List<Car> cars = carService
-      .exampleBuilder.of(carExample)
-      .with(Car_.model)
-      .build()
-      .getResultList();
 
-----
+==== Multiple attributes
 
 You can also provide multiple attributes:
 
@@ -426,7 +421,9 @@ Hibernate:
         )
 ----
 
-Find cars by sales point address example:
+==== Associations
+
+Associations will also be queried:
 
 [source, java]
 ----
@@ -450,7 +447,7 @@ assertThat(carsFound).isNotNull().hasSize(2)
 ----
 <1> Fetch association attribute in result list
 
-List brands by sales point address:
+===== List brands by sales point address:
 
 [source, java]
 ----
@@ -493,7 +490,7 @@ Hibernate:
         salespoint3_.address=?
 ----
 
-Different operation for each attributes:
+==== Different operation for each attribute
 
 [source, java]
 ----
@@ -546,7 +543,7 @@ Hibernate:
         and car0_.price<=12.999
 ----
 
-Using an `or` expression:
+==== Using an `or` expression:
 
 [source, java]
 ----
