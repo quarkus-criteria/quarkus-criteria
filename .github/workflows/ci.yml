@@ -25,7 +25,7 @@ jobs:
       - name: Build & Test
         run: mvn clean install -Pcoverage
       - name: Run it tests application
-        run: java -jar it-tests/target/quarkus-criteria-it-runner.jar
+        run: java -jar it-tests/target/quarkus-app/quarkus-run.jar
       - uses: actions/upload-artifact@master
         with:
           name: output
