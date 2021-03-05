@@ -561,7 +561,7 @@ List<Car> cars = crudService
         .build()
         .getResultList();
 assertThat(cars).isNotNull()
-        .extracting(c -> c.getName())
+        .extracting(Car::getName)
         .contains("Fusion", "Sentra", "Model S")
         .doesNotContain("Model X");
 ----

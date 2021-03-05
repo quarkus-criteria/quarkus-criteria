@@ -93,7 +93,7 @@ public class CriteriaByExampleIt {
                 .with().build()
                 .getResultList();
         assertThat(cars).isNotNull().hasSize(1)
-                .extracting("model")
+                .extracting(Car::getModel)
                 .contains("Ferrari");
     }
 
@@ -107,7 +107,7 @@ public class CriteriaByExampleIt {
                 .build()
                 .getResultList();
         assertThat(cars).isNotNull().hasSize(1)
-                .extracting("name")
+                .extracting(Car::getName)
                 .contains("porche avenger");
     }
 
@@ -121,7 +121,7 @@ public class CriteriaByExampleIt {
                 .build()
                 .getResultList();
         assertThat(cars).isNotNull().hasSize(1)
-                .extracting("name")
+                .extracting(Car::getName)
                 .contains("porche avenger");
     }
 
@@ -138,7 +138,7 @@ public class CriteriaByExampleIt {
                 .getResultList();
         assertThat(carSalesPointsFound).isNotNull().hasSize(1);
         assertThat(carSalesPointsFound.get(0).getCar())
-                .extracting("name")
+                .extracting(Car::getName)
                 .contains("Sentra");
     }
 
@@ -166,7 +166,7 @@ public class CriteriaByExampleIt {
                 .build().fetch(Car_.brand)
                 .getResultList();
         assertThat(carsFound).isNotNull().hasSize(1)
-                .extracting("name")
+                .extracting(Car::getName)
                 .contains("Sentra");
         assertThat(carsFound.get(0).getBrand().getName()).isEqualTo("Nissan");
     }
@@ -205,7 +205,7 @@ public class CriteriaByExampleIt {
                 .getResultList();
 
         assertThat(carsFound).isNotNull().hasSize(1)
-                .extracting("name")
+                .extracting(Car::getName)
                 .contains("Sentra");
         assertThat(carsFound.get(0).getBrand().getName()).isEqualTo("Nissan");
     }
@@ -227,7 +227,7 @@ public class CriteriaByExampleIt {
                 .map(carSalesPoint -> carSalesPoint.getCar())
                 .collect(Collectors.toUnmodifiableList());
         assertThat(carsFound).isNotNull().hasSize(2)
-                .extracting("name")
+                .extracting(Car::getName)
                 .contains("Model S", "Model X");
     }
 
@@ -249,7 +249,7 @@ public class CriteriaByExampleIt {
                 .map(carSalesPoint -> carSalesPoint.getCar())
                 .collect(Collectors.toUnmodifiableList());
         assertThat(carsFound).isNotNull().hasSize(2)
-                .extracting("name")
+                .extracting(Car::getName)
                 .contains("Model S", "Model X");
     }
 
@@ -284,7 +284,7 @@ public class CriteriaByExampleIt {
                 .build()
                 .getResultList();
         assertThat(brands).isNotNull().hasSize(2)
-                .extracting(brand -> brand.getName())
+                .extracting(Brand::getName)
                 .contains("Ford", "Nissan");
     }
 
@@ -303,7 +303,7 @@ public class CriteriaByExampleIt {
                 .distinct()
                 .getResultList();
         assertThat(brands).isNotNull().hasSize(1)
-                .extracting(brand -> brand.getName())
+                .extracting(Brand::getName)
                 .contains("Tesla");
     }
 
@@ -319,7 +319,7 @@ public class CriteriaByExampleIt {
                 .build()
                 .getResultList();
         assertThat(brands).isNotNull().hasSize(1)
-                .extracting(brand -> brand.getName())
+                .extracting(Brand::getName)
                 .contains("Tesla");
     }
 
@@ -336,7 +336,7 @@ public class CriteriaByExampleIt {
                 .build()
                 .getResultList();
         assertThat(brands).isNotNull().hasSize(2)
-                .extracting(brand -> brand.getName())
+                .extracting(Brand::getName)
                 .contains("Ford", "Tesla");
     }
 
@@ -384,7 +384,7 @@ public class CriteriaByExampleIt {
 
         List<Car> carsFound = criteriaByExample.getResultList();
         assertThat(carsFound).isNotNull().hasSize(1)
-                .extracting("name")
+                .extracting(Car::getName)
                 .contains("Sentra");
     }
 
@@ -409,7 +409,7 @@ public class CriteriaByExampleIt {
                 .hasSize(1);
         Car carFound = resultList.get(0).getCar();
         assertThat(carFound)
-                .extracting("id", "name")
+                .extracting(Car::getName, Car::getId)
                 .contains(2, "Sentra");
         List<CarSalesPoint> carSalesPointFound = carFound.getCarSalesPoints();
         assertThat(carSalesPointFound).hasSize(1);
@@ -427,7 +427,7 @@ public class CriteriaByExampleIt {
                 .build()
                 .getResultList();
         assertThat(brands).isNotNull().hasSize(1)
-                .extracting("id")
+                .extracting(Brand::getId)
                 .contains(2L);
 
         brands = brandCrud
@@ -436,7 +436,7 @@ public class CriteriaByExampleIt {
                 .build()
                 .getResultList();
         assertThat(brands).isNotNull().hasSize(2)
-                .extracting("id")
+                .extracting(Brand::getId)
                 .contains(1L, 3L);
     }
 
@@ -451,7 +451,7 @@ public class CriteriaByExampleIt {
                 .build()
                 .getResultList();
         assertThat(cars).hasSize(2)
-                .extracting(car -> car.getName())
+                .extracting(Car::getName)
                 .contains("Model S", "Model X");
     }
 
@@ -468,7 +468,7 @@ public class CriteriaByExampleIt {
                 .build()
                 .getResultList();
         assertThat(carsFound).isNotNull().hasSize(2)
-                .extracting("name")
+                .extracting(Car::getName)
                 .contains("Model S", "Model X");
 
         tesla.setCars(new HashSet<>(carsFound));
@@ -480,7 +480,7 @@ public class CriteriaByExampleIt {
                 .getResultList();
 
         assertThat(brands).isNotNull().hasSize(1)
-                .extracting("name")
+                .extracting(Brand::getName)
                 .contains("Tesla");
     }
 
@@ -492,7 +492,7 @@ public class CriteriaByExampleIt {
                 .with(LT, Car_.price)
                 .build().getResultList();
         assertThat(carsFound).isNotNull().hasSize(1)
-                .extracting("name")
+                .extracting(Car::getName)
                 .contains("Model S");
 
         carsFound = carService.exampleBuilder
@@ -500,7 +500,7 @@ public class CriteriaByExampleIt {
                 .with(LT_OR_EQ, Car_.price)
                 .build().getResultList();
         assertThat(carsFound).isNotNull().hasSize(2)
-                .extracting("name")
+                .extracting(Car::getName)
                 .contains("Model S", "Model X");
 
         carsFound = carService.exampleBuilder
@@ -508,7 +508,7 @@ public class CriteriaByExampleIt {
                 .with(GT, Car_.price)
                 .build().getResultList();
         assertThat(carsFound).isNotNull().hasSize(2)
-                .extracting("name")
+                .extracting(Car::getName)
                 .contains("Sentra", "Fusion");
 
         carsFound = carService.exampleBuilder
@@ -516,7 +516,7 @@ public class CriteriaByExampleIt {
                 .with(GT_OR_EQ, Car_.price)
                 .build().getResultList();
         assertThat(carsFound).isNotNull().hasSize(3)
-                .extracting("name")
+                .extracting(Car::getName)
                 .contains("Sentra", "Fusion", "Model X");
     }
 
@@ -528,7 +528,7 @@ public class CriteriaByExampleIt {
                 .with(LIKE, Car_.name)
                 .build().getResultList();
         assertThat(carsFound).isNotNull().hasSize(2)
-                .extracting("name")
+                .extracting(Car::getName)
                 .contains("Model S", "Model X");
 
         carsFound = carService.exampleBuilder
@@ -536,7 +536,7 @@ public class CriteriaByExampleIt {
                 .with(NOT_LIKE, Car_.name)
                 .build().getResultList();
         assertThat(carsFound).isNotNull().hasSize(2)
-                .extracting("name")
+                .extracting(Car::getName)
                 .contains("Sentra", "Fusion");
 
         carsFound = carService.exampleBuilder
@@ -544,7 +544,7 @@ public class CriteriaByExampleIt {
                 .with(NOT_LIKE_IGNORE_CASE, Car_.name)
                 .build().getResultList();
         assertThat(carsFound).isNotNull().hasSize(2)
-                .extracting("name")
+                .extracting(Car::getName)
                 .contains("Sentra", "Fusion");
 
         carsFound = carService.exampleBuilder
@@ -552,7 +552,7 @@ public class CriteriaByExampleIt {
                 .with(LIKE_IGNORE_CASE, Car_.name)
                 .build().getResultList();
         assertThat(carsFound).isNotNull().hasSize(2)
-                .extracting("name")
+                .extracting(Car::getName)
                 .contains("Model S", "Model X");
 
         carsFound = carService.exampleBuilder
@@ -560,7 +560,7 @@ public class CriteriaByExampleIt {
                 .with(NOT_EQ, Car_.name)
                 .build().getResultList();
         assertThat(carsFound).isNotNull().hasSize(3)
-                .extracting("name")
+                .extracting(Car::getName)
                 .contains("Model S", "Model X", "Fusion");
 
         carsFound = carService.exampleBuilder
@@ -568,7 +568,7 @@ public class CriteriaByExampleIt {
                 .with(NOT_EQ_IGNORE_CASE, Car_.name)
                 .build().getResultList();
         assertThat(carsFound).isNotNull().hasSize(3)
-                .extracting("name")
+                .extracting(Car::getName)
                 .contains("Model S", "Model X", "Fusion");
     }
 
@@ -583,7 +583,7 @@ public class CriteriaByExampleIt {
                 .build()
                 .getSingleResult();
         assertThat(car).isNotNull()
-                .extracting(c -> c.getName())
+                .extracting(Car::getName)
                 .contains("Model S");
     }
 
@@ -599,7 +599,7 @@ public class CriteriaByExampleIt {
                 .build()
                 .getResultList();
         assertThat(cars).isNotNull()
-                .extracting(c -> c.getName())
+                .extracting(Car::getName)
                 .contains("Model S", "Fusion")
                 .doesNotContain("Model X", "Sentra");
     }
@@ -619,7 +619,7 @@ public class CriteriaByExampleIt {
                 .build()
                 .getResultList();
         assertThat(cars).isNotNull()
-                .extracting(c -> c.getName())
+                .extracting(Car::getName)
                 .contains("Model S", "Fusion", "Sentra")
                 .doesNotContain("Model X");
     }
@@ -640,7 +640,7 @@ public class CriteriaByExampleIt {
                 .build()
                 .getResultList();
         assertThat(cars).isNotNull()
-                .extracting(c -> c.getName())
+                .extracting(Car::getName)
                 .contains("Fusion", "Sentra", "Model S")
                 .doesNotContain("Model X");
     }
@@ -664,7 +664,7 @@ public class CriteriaByExampleIt {
                 .distinct()
                 .getResultList();
         assertThat(cars).isNotNull()
-                .extracting(c -> c.getName())
+                .extracting(Car::getName)
                 .contains("Fusion", "Model X", "Model S")
                 .doesNotContain("Sentra");
     }
@@ -696,7 +696,7 @@ public class CriteriaByExampleIt {
                 .getResultList();
 
         assertThat(cars).isNotNull()
-                .extracting(c -> c.getName())
+                .extracting(Car::getName)
                 .contains("Model S", "Fusion", "Sentra")
                 .doesNotContain("Model X");
     }
